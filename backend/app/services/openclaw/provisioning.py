@@ -552,10 +552,25 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         models = (
             {registration.agent_id: registration.model} if registration.model else None
         )
-        await self.patch_agent_heartbeats(
-            [(registration.agent_id, registration.workspace_path, registration.heartbeat)],
-            models=models,
-        )
+        # Heartbeat config is best-effort: agents implement their own heartbeat loops via
+        # HEARTBEAT.md and the gateway auto-nudge is a fallback only.  If config.patch
+        # fails (rate limit or baseHash conflict from gateway's async auto-save), log and
+        # continue — the workspace files have already been written successfully.
+        import asyncio as _asyncio_upsert
+        import logging as _logging
+
+        await _asyncio_upsert.sleep(1.5)
+        try:
+            await self.patch_agent_heartbeats(
+                [(registration.agent_id, registration.workspace_path, registration.heartbeat)],
+                models=models,
+            )
+        except OpenClawGatewayError as _hb_exc:
+            _logging.getLogger(__name__).warning(
+                "gateway.heartbeat_patch.skipped agent_id=%s reason=%s",
+                registration.agent_id,
+                _hb_exc,
+            )
 
     async def delete_agent(self, agent_id: str, *, delete_files: bool = True) -> None:
         await openclaw_call(
@@ -614,8 +629,11 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
     ) -> None:
         import asyncio as _asyncio
 
-        _MAX_RETRIES = 5
-        _RETRY_DELAY = 0.5
+        # Keep retries low to avoid exhausting the gateway's config.patch rate limit
+        # (typically 1 call per ~57s). With 1.5s pre-call delay in upsert_agent the
+        # first attempt usually succeeds; 2 retries cover edge cases.
+        _MAX_RETRIES = 2
+        _RETRY_DELAY = 1.0
 
         entry_by_id = _heartbeat_entry_map(entries)
         for attempt in range(_MAX_RETRIES):

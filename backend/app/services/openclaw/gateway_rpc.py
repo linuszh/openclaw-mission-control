@@ -162,6 +162,19 @@ class GatewayConfig:
     token: str | None = None
 
 
+def _origin_from_gateway_url(url: str) -> str:
+    """Derive an HTTP(S) origin from a ws/wss gateway URL.
+
+    The OpenClaw gateway validates the Origin header against its
+    controlUi.allowedOrigins list and defaults to allowing the gateway host
+    itself.  Server-to-server WebSocket clients don't send Origin automatically,
+    so we derive it here so the gateway can recognise the connection.
+    """
+    parsed = urlparse(url)
+    scheme = "https" if parsed.scheme == "wss" else "http"
+    return f"{scheme}://{parsed.netloc}"
+
+
 def _build_gateway_url(config: GatewayConfig) -> str:
     base_url: str = (config.url or "").strip()
     if not base_url:
@@ -290,7 +303,8 @@ async def openclaw_call(
         _redacted_url_for_log(gateway_url),
     )
     try:
-        async with websockets.connect(gateway_url, ping_interval=None) as ws:
+        origin = _origin_from_gateway_url(gateway_url)
+        async with websockets.connect(gateway_url, ping_interval=None, origin=origin) as ws:
             first_message = None
             try:
                 first_message = await asyncio.wait_for(ws.recv(), timeout=2)
@@ -336,7 +350,8 @@ async def openclaw_connect_metadata(*, config: GatewayConfig) -> object:
         _redacted_url_for_log(gateway_url),
     )
     try:
-        async with websockets.connect(gateway_url, ping_interval=None) as ws:
+        origin = _origin_from_gateway_url(gateway_url)
+        async with websockets.connect(gateway_url, ping_interval=None, origin=origin) as ws:
             first_message = None
             try:
                 first_message = await asyncio.wait_for(ws.recv(), timeout=2)

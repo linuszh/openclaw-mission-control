@@ -169,20 +169,35 @@ async def sync_gateway_templates(
 @router.get("/{gateway_id}/models")
 async def list_gateway_models(
     gateway_id: UUID,
+    configured: bool = Query(default=False),
     session: AsyncSession = SESSION_DEP,
     ctx: OrganizationContext = ORG_ADMIN_DEP,
 ) -> dict:
-    """Return models available on the gateway."""
+    """Return models available on the gateway.
+
+    When configured=true, only returns models from providers explicitly
+    configured in the gateway (cross-referenced via config.get).
+    """
     service = GatewayAdminLifecycleService(session)
     gateway = await service.require_gateway(
         gateway_id=gateway_id,
         organization_id=ctx.organization.id,
     )
-    config = GatewayClientConfig(url=gateway.url, token=gateway.token)
-    result = await openclaw_call("models.list", {}, config=config)
+    gw_config = GatewayClientConfig(url=gateway.url, token=gateway.token)
+    result = await openclaw_call("models.list", {}, config=gw_config)
     models: list[dict] = []
     if isinstance(result, dict):
         models = [m for m in (result.get("models") or []) if isinstance(m, dict)]
+    if configured and models:
+        try:
+            cfg = await openclaw_call("config.get", {}, config=gw_config)
+            data: dict[str, Any] = cfg.get("config") or cfg.get("parsed") or {}
+            providers_cfg = (data.get("models") or {}).get("providers") or {}
+            configured_providers: set[str] = set(providers_cfg.keys())
+            if configured_providers:
+                models = [m for m in models if m.get("provider") in configured_providers]
+        except Exception:
+            pass
     return {"models": models}
 
 

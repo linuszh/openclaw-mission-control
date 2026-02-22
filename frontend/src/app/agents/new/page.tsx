@@ -124,7 +124,7 @@ export default function NewAgentPage() {
     queryKey: ["gateway-models", gatewayIdForModels],
     queryFn: () =>
       customFetch<{ models: GatewayModel[] }>(
-        `/api/v1/gateways/${gatewayIdForModels}/models`,
+        `/api/v1/gateways/${gatewayIdForModels}/models?configured=true`,
         { method: "GET" },
       ),
     enabled: Boolean(isSignedIn && isAdmin && gatewayIdForModels),

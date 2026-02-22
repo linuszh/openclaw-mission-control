@@ -108,7 +108,7 @@ export default function NewBoardPage() {
     queryKey: ["gateway-models", displayGatewayId],
     queryFn: () =>
       customFetch<{ models: GatewayModel[] }>(
-        `/api/v1/gateways/${displayGatewayId}/models`,
+        `/api/v1/gateways/${displayGatewayId}/models?configured=true`,
         { method: "GET" },
       ),
     enabled: Boolean(isSignedIn && isAdmin && displayGatewayId),

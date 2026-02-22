@@ -828,9 +828,10 @@ export default function BoardDetailPage() {
     enabled: Boolean(isSignedIn && board?.gateway_id),
   });
 
+  const NO_TASK_MODEL_VALUE = "__default__";
   const taskModelOptions = [
-    { value: "", label: "Default (board setting)" },
-    ...(gatewayModelsQuery.data?.models ?? []).map((m) => ({
+    { value: NO_TASK_MODEL_VALUE, label: "Default (board setting)" },
+    ...(gatewayModelsQuery.data?.data?.models ?? []).map((m) => ({
       value: m.id,
       label: m.name,
     })),
@@ -1130,7 +1131,7 @@ export default function BoardDetailPage() {
   const [createTagIds, setCreateTagIds] = useState<string[]>([]);
   const [createCustomFieldValues, setCreateCustomFieldValues] =
     useState<TaskCustomFieldValues>({});
-  const [createModel, setCreateModel] = useState<string>("");
+  const [createModel, setCreateModel] = useState<string>(NO_TASK_MODEL_VALUE);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -1964,7 +1965,7 @@ export default function BoardDetailPage() {
     setCreateDueDate("");
     setCreateTagIds([]);
     setCreateCustomFieldValues(defaultCreateCustomFieldValues);
-    setCreateModel("");
+    setCreateModel(NO_TASK_MODEL_VALUE);
     setCreateError(null);
   };
 
@@ -2000,7 +2001,7 @@ export default function BoardDetailPage() {
         due_at: localDateInputToUtcIso(createDueDate),
         tag_ids: createTagIds,
         custom_field_values: createCustomFieldPayload,
-        model: createModel || null,
+        model: createModel === NO_TASK_MODEL_VALUE ? null : createModel || null,
       };
       const result = await createTaskApiV1BoardsBoardIdTasksPost(
         boardId,

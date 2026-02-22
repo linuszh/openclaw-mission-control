@@ -35,7 +35,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 
 type GatewayModel = { id: string; name: string };
-const DEFAULT_MODEL_OPTION = { value: "", label: "Default (gateway setting)" };
+const NO_MODEL_VALUE = "__default__";
+const DEFAULT_MODEL_OPTION = { value: NO_MODEL_VALUE, label: "Default (gateway setting)" };
 
 const slugify = (value: string) =>
   value
@@ -54,7 +55,7 @@ export default function NewBoardPage() {
   const [description, setDescription] = useState("");
   const [gatewayId, setGatewayId] = useState<string>("");
   const [boardGroupId, setBoardGroupId] = useState<string>("none");
-  const [defaultModel, setDefaultModel] = useState<string>("");
+  const [defaultModel, setDefaultModel] = useState<string>(NO_MODEL_VALUE);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -115,7 +116,7 @@ export default function NewBoardPage() {
 
   const modelOptions = [
     DEFAULT_MODEL_OPTION,
-    ...(modelsQuery.data?.models ?? []).map((m) => ({
+    ...(modelsQuery.data?.data?.models ?? []).map((m) => ({
       value: m.id,
       label: m.name,
     })),
@@ -174,7 +175,7 @@ export default function NewBoardPage() {
         description: trimmedDescription,
         gateway_id: resolvedGatewayId,
         board_group_id: boardGroupId === "none" ? null : boardGroupId,
-        default_model: defaultModel || null,
+        default_model: defaultModel === NO_MODEL_VALUE ? null : defaultModel || null,
       },
     });
   };

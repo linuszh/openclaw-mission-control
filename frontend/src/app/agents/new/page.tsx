@@ -33,7 +33,8 @@ import { DEFAULT_IDENTITY_PROFILE } from "@/lib/agent-templates";
 
 type GatewayModel = { id: string; name: string };
 
-const DEFAULT_MODEL_OPTION = { value: "", label: "Default (gateway setting)" };
+const NO_MODEL_VALUE = "__default__";
+const DEFAULT_MODEL_OPTION = { value: NO_MODEL_VALUE, label: "Default (gateway setting)" };
 
 type IdentityProfile = {
   role: string;
@@ -68,7 +69,7 @@ const normalizeIdentityProfile = (
     role: profile.role.trim(),
     communication_style: profile.communication_style.trim(),
     emoji: profile.emoji.trim(),
-    model: profile.model.trim(),
+    model: profile.model === NO_MODEL_VALUE ? "" : profile.model.trim(),
   };
   const hasValue = Object.values(normalized).some((value) => value.length > 0);
   return hasValue ? normalized : null;
@@ -85,7 +86,7 @@ export default function NewAgentPage() {
   const [heartbeatEvery, setHeartbeatEvery] = useState("10m");
   const [identityProfile, setIdentityProfile] = useState<IdentityProfile>({
     ...DEFAULT_IDENTITY_PROFILE,
-    model: "",
+    model: NO_MODEL_VALUE,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -131,7 +132,7 @@ export default function NewAgentPage() {
 
   const modelOptions = [
     DEFAULT_MODEL_OPTION,
-    ...(modelsQuery.data?.models ?? []).map((m) => ({
+    ...(modelsQuery.data?.data?.models ?? []).map((m) => ({
       value: m.id,
       label: m.name,
     })),
@@ -299,7 +300,7 @@ export default function NewAgentPage() {
                 Model
               </label>
               <Select
-                value={identityProfile.model || ""}
+                value={identityProfile.model || NO_MODEL_VALUE}
                 onValueChange={(value) =>
                   setIdentityProfile((current) => ({
                     ...current,

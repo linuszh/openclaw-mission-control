@@ -35,7 +35,8 @@ import {
 import { DEFAULT_IDENTITY_PROFILE } from "@/lib/agent-templates";
 
 type GatewayModel = { id: string; name: string };
-const DEFAULT_MODEL_OPTION = { value: "", label: "Default (gateway setting)" };
+const NO_MODEL_VALUE = "__default__";
+const DEFAULT_MODEL_OPTION = { value: NO_MODEL_VALUE, label: "Default (gateway setting)" };
 
 type IdentityProfile = {
   role: string;
@@ -75,7 +76,7 @@ const mergeIdentityProfile = (
     role: patch.role.trim(),
     communication_style: patch.communication_style.trim(),
     emoji: patch.emoji.trim(),
-    model: patch.model.trim(),
+    model: patch.model === NO_MODEL_VALUE ? "" : patch.model.trim(),
   };
   for (const [key, value] of Object.entries(updates)) {
     if (value) {
@@ -95,7 +96,7 @@ const withIdentityDefaults = (
     profile?.communication_style ??
     DEFAULT_IDENTITY_PROFILE.communication_style,
   emoji: profile?.emoji ?? DEFAULT_IDENTITY_PROFILE.emoji,
-  model: profile?.model ?? "",
+  model: profile?.model ?? NO_MODEL_VALUE,
 });
 
 export default function EditAgentPage() {
@@ -202,7 +203,7 @@ export default function EditAgentPage() {
 
   const modelOptions = [
     DEFAULT_MODEL_OPTION,
-    ...(modelsQuery.data?.models ?? []).map((m) => ({
+    ...(modelsQuery.data?.data?.models ?? []).map((m) => ({
       value: m.id,
       label: m.name,
     })),
@@ -463,7 +464,7 @@ export default function EditAgentPage() {
                 Model
               </label>
               <Select
-                value={resolvedIdentityProfile.model || ""}
+                value={resolvedIdentityProfile.model || NO_MODEL_VALUE}
                 onValueChange={(value) =>
                   setIdentityProfile({
                     ...resolvedIdentityProfile,

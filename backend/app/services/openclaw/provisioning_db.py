@@ -1086,18 +1086,25 @@ class AgentLifecycleService(OpenClawDBService):
                             "(org owner not found)."
                         ),
                     )
-            await OpenClawGatewayProvisioner().apply_agent_lifecycle(
-                agent=agent,
-                gateway=target.gateway,
-                board=target.board if not target.is_main_agent else None,
-                auth_token=auth_token,
-                user=template_user,
-                action=action,
-                force_bootstrap=force_bootstrap,
-                reset_session=True,
-                wake=True,
-                deliver_wakeup=True,
-                wakeup_verb=wakeup_verb,
+            provisioner = OpenClawGatewayProvisioner()
+            backoff = GatewayBackoff(
+                timeout_s=15,
+                timeout_context=f"agent {action} provisioning",
+            )
+            await backoff.run(
+                lambda: provisioner.apply_agent_lifecycle(
+                    agent=agent,
+                    gateway=target.gateway,
+                    board=target.board if not target.is_main_agent else None,
+                    auth_token=auth_token,
+                    user=template_user,
+                    action=action,
+                    force_bootstrap=force_bootstrap,
+                    reset_session=True,
+                    wake=True,
+                    deliver_wakeup=True,
+                    wakeup_verb=wakeup_verb,
+                )
             )
             mark_provision_complete(agent, status="online", clear_confirm_token=True)
             self.session.add(agent)

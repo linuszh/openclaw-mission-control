@@ -118,6 +118,25 @@ class OpenClawAuthorizationPolicy:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     @staticmethod
+    def require_any_board_lead_in_gateway(
+        *,
+        actor_agent: Agent | None,
+        detail: str = "Only board leads can relay tasks across boards",
+    ) -> Agent:
+        """Allow any board lead in the same gateway (cross-board relay auth)."""
+        if actor_agent is None or not actor_agent.is_board_lead:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=detail,
+            )
+        if not actor_agent.board_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Board lead must be assigned to a board to relay tasks",
+            )
+        return actor_agent
+
+    @staticmethod
     def require_board_lead_actor(
         *,
         actor_agent: Agent | None,

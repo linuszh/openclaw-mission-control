@@ -277,3 +277,55 @@ class GatewayMainAskUserResponse(SQLModel):
         default=None,
         description="Resolved main agent display name.",
     )
+
+
+class RelayTaskRequest(SQLModel):
+    """Payload for cross-board task relay from one board lead to another."""
+
+    model_config = SQLModelConfig(
+        json_schema_extra={
+            "x-llm-intent": "cross_board_task_relay",
+            "x-when-to-use": [
+                "A board lead on one board (e.g. Dispatch/GLM) needs to create a task on another board (e.g. Execution/Qwen)",
+                "Relaying inbox work detected on one board to a specialist board lead",
+            ],
+            "x-when-not-to-use": [
+                "Creating a task on your own board — use agent_lead_create_task instead",
+                "Sending an ephemeral message without a persistent task — use nudge",
+            ],
+            "x-required-actor": "board_lead_any_board_in_gateway",
+            "x-response-shape": "RelayTaskResponse",
+        },
+    )
+
+    title: NonEmptyStr = Field(description="Task title to create on the target board.")
+    description: str | None = Field(default=None, description="Task body and context.")
+    priority: str = Field(default="medium", description="Task priority: low, medium, high.")
+    relay_reason: str | None = Field(
+        default=None,
+        description="Optional note explaining why this task is being relayed.",
+    )
+    correlation_id: str | None = Field(
+        default=None,
+        description="Optional correlation token for cross-board audit tracing.",
+    )
+
+
+class RelayTaskResponse(SQLModel):
+    """Response for a successful cross-board task relay."""
+
+    model_config = SQLModelConfig(
+        json_schema_extra={
+            "x-llm-intent": "cross_board_task_relay_result",
+            "x-interpretation": "Task created on target board and target lead notified.",
+        },
+    )
+
+    ok: bool = Field(default=True)
+    task_id: UUID = Field(description="ID of the newly created task on the target board.")
+    target_board_id: UUID = Field(description="Target board where the task was created.")
+    target_lead_agent_id: UUID | None = Field(
+        default=None, description="Lead agent on the target board that was notified."
+    )
+    target_lead_agent_name: str | None = Field(default=None)
+    nudge_sent: bool = Field(default=False, description="Whether a gateway nudge was dispatched.")

@@ -43,6 +43,8 @@ from app.schemas.gateway_coordination import (
     GatewayLeadMessageResponse,
     GatewayMainAskUserRequest,
     GatewayMainAskUserResponse,
+    RelayTaskRequest,
+    RelayTaskResponse,
 )
 from app.schemas.health import AgentHealthStatusResponse
 from app.schemas.pagination import DefaultLimitOffsetPage
@@ -759,6 +761,123 @@ async def create_task(
         session,
         task=task,
         board_id=board.id,
+    )
+
+
+@router.post(
+    "/boards/{board_id}/relay-task",
+    response_model=RelayTaskResponse,
+    tags=AGENT_LEAD_TAGS,
+    summary="Relay a task to another board",
+    description=(
+        "Create a task on a target board as a board lead from a different board.\n\n"
+        "The caller must be a board lead on any board in the same gateway. "
+        "The task is auto-assigned to the target board's lead and a nudge is dispatched.\n\n"
+        "Use this to implement cross-board orchestration — e.g. a Dispatch lead (GLM) "
+        "relaying inbox work to an Execution lead (Qwen)."
+    ),
+    operation_id="agent_lead_relay_task",
+    openapi_extra={
+        "x-llm-intent": "cross_board_task_relay",
+        "x-when-to-use": [
+            "Dispatch lead (GLM) wants to forward a task to the Execution board (Qwen)",
+            "You are a board lead and need to hand off work to a specialist board",
+        ],
+        "x-when-not-to-use": [
+            "Creating tasks on your own board — use agent_lead_create_task",
+            "Sending an ephemeral nudge without a task record — use agent_nudge_agent",
+        ],
+        "x-required-actor": "board_lead_any_board_in_gateway",
+        "x-side-effects": [
+            "Creates a task on target board assigned to target board lead",
+            "Dispatches a gateway nudge to the target lead (non-fatal if it fails)",
+            "Records a task.relayed activity event",
+        ],
+    },
+)
+async def relay_task(
+    payload: RelayTaskRequest,
+    board: Board = BOARD_DEP,
+    session: AsyncSession = SESSION_DEP,
+    agent_ctx: AgentAuthContext = AGENT_CTX_DEP,
+) -> RelayTaskResponse:
+    """Relay a task to a target board as any board lead in the same gateway."""
+    OpenClawAuthorizationPolicy.require_any_board_lead_in_gateway(actor_agent=agent_ctx.agent)
+
+    # Tenant isolation: target board must be in the same gateway as the caller
+    if board.gateway_id != agent_ctx.agent.gateway_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target board not found or not in the same gateway",
+        )
+
+    # Find the target board's lead
+    target_lead = (
+        await Agent.objects.filter_by(board_id=board.id)
+        .filter(col(Agent.is_board_lead).is_(True))
+        .first(session)
+    )
+    if target_lead is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Target board has no active lead agent to receive the task",
+        )
+
+    task = Task(
+        title=payload.title,
+        description=payload.description,
+        priority=payload.priority,
+        status="inbox",
+        board_id=board.id,
+        assigned_agent_id=target_lead.id,
+        auto_created=True,
+        auto_reason=f"relay:{agent_ctx.agent.id}:{agent_ctx.agent.board_id}",
+    )
+    session.add(task)
+    await session.flush()
+
+    record_activity(
+        session,
+        event_type="task.relayed",
+        task_id=task.id,
+        message=(
+            f"Task relayed from board {agent_ctx.agent.board_id} "
+            f"by agent {agent_ctx.agent.id}: {task.title}"
+        ),
+        agent_id=agent_ctx.agent.id,
+    )
+    await session.commit()
+    await session.refresh(task)
+
+    # Nudge the target lead — non-fatal if it fails
+    nudge_sent = False
+    if target_lead.openclaw_session_id:
+        try:
+            coordination = GatewayCoordinationService(session)
+            await coordination.nudge_board_agent(
+                board=board,
+                actor_agent=agent_ctx.agent,
+                target_agent_id=str(target_lead.id),
+                message=(
+                    f"RELAYED TASK\n"
+                    f"From board: {agent_ctx.agent.board_id}\n"
+                    f"Task: {task.title}\n"
+                    f"Task ID: {task.id}\n"
+                    f"Relay reason: {payload.relay_reason or 'none'}\n\n"
+                    f"Check your inbox and begin work."
+                ),
+                correlation_id=payload.correlation_id or f"relay:{task.id}",
+            )
+            nudge_sent = True
+        except HTTPException:
+            pass  # Nudge failure is non-fatal — task already created
+
+    return RelayTaskResponse(
+        task_id=task.id,
+        target_board_id=board.id,
+        target_lead_agent_id=target_lead.id,
+        target_lead_agent_name=target_lead.name,
+        nudge_sent=nudge_sent,
     )
 
 

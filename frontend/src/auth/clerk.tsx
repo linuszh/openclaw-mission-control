@@ -3,7 +3,7 @@
 // NOTE: We intentionally keep this file very small and dependency-free.
 // It provides CI/secretless-build safe fallbacks for Clerk hooks/components.
 
-import type { ReactNode, ComponentProps } from "react";
+import { useState, useEffect, type ReactNode, type ComponentProps } from "react";
 
 import {
   ClerkProvider,
@@ -31,9 +31,32 @@ export function isClerkEnabled(): boolean {
   );
 }
 
+// Defers sessionStorage check to after mount to avoid SSR/client hydration mismatch.
+function LocalSignedIn({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+  useEffect(() => {
+    setHasToken(hasLocalAuthToken());
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
+  return hasToken ? <>{children}</> : null;
+}
+
+function LocalSignedOut({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+  useEffect(() => {
+    setHasToken(hasLocalAuthToken());
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
+  return hasToken ? null : <>{children}</>;
+}
+
 export function SignedIn(props: { children: ReactNode }) {
   if (isLocalAuthMode()) {
-    return hasLocalAuthToken() ? <>{props.children}</> : null;
+    return <LocalSignedIn>{props.children}</LocalSignedIn>;
   }
   if (!isClerkEnabled()) return null;
   return <ClerkSignedIn>{props.children}</ClerkSignedIn>;
@@ -41,7 +64,7 @@ export function SignedIn(props: { children: ReactNode }) {
 
 export function SignedOut(props: { children: ReactNode }) {
   if (isLocalAuthMode()) {
-    return hasLocalAuthToken() ? null : <>{props.children}</>;
+    return <LocalSignedOut>{props.children}</LocalSignedOut>;
   }
   if (!isClerkEnabled()) return <>{props.children}</>;
   return <ClerkSignedOut>{props.children}</ClerkSignedOut>;

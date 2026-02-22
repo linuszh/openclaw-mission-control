@@ -1,7 +1,7 @@
 "use client";
 
 import { ClerkProvider } from "@clerk/nextjs";
-import { useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 import { isLikelyValidClerkPublishableKey } from "@/auth/clerkKey";
 import {
@@ -13,17 +13,23 @@ import { LocalAuthLogin } from "@/components/organisms/LocalAuthLogin";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const localMode = isLocalAuthMode();
+  const [mounted, setMounted] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
     if (!localMode) {
       clearLocalAuthToken();
+    } else {
+      setHasToken(!!getLocalAuthToken());
     }
+    setMounted(true);
   }, [localMode]);
 
   if (localMode) {
-    if (!getLocalAuthToken()) {
-      return <LocalAuthLogin />;
-    }
+    // Before mount (SSR + hydration): render children to avoid mismatch.
+    // Children handle unauthorized state themselves via DashboardPageLayout.
+    if (!mounted) return <>{children}</>;
+    if (!hasToken) return <LocalAuthLogin />;
     return <>{children}</>;
   }
 

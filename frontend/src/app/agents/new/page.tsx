@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEFAULT_IDENTITY_PROFILE } from "@/lib/agent-templates";
+import { DEFAULT_IDENTITY_PROFILE, CLI_AGENT_TEMPLATES } from "@/lib/agent-templates";
 
 type GatewayModel = { id: string; name: string };
 
@@ -41,6 +41,7 @@ type IdentityProfile = {
   communication_style: string;
   emoji: string;
   model: string;
+  tool?: string;
 };
 
 const EMOJI_OPTIONS = [
@@ -70,8 +71,9 @@ const normalizeIdentityProfile = (
     communication_style: profile.communication_style.trim(),
     emoji: profile.emoji.trim(),
     model: profile.model === NO_MODEL_VALUE ? "" : profile.model.trim(),
+    ...(profile.tool ? { tool: profile.tool } : {}),
   };
-  const hasValue = Object.values(normalized).some((value) => value.length > 0);
+  const hasValue = Object.values(normalized).some((value) => value && value.length > 0);
   return hasValue ? normalized : null;
 };
 
@@ -123,7 +125,7 @@ export default function NewAgentPage() {
   const modelsQuery = useQuery({
     queryKey: ["gateway-models", gatewayIdForModels],
     queryFn: () =>
-      customFetch<{ models: GatewayModel[] }>(
+      customFetch<{ data: { models: GatewayModel[] } }>(
         `/api/v1/gateways/${gatewayIdForModels}/models?configured=true`,
         { method: "GET" },
       ),
@@ -183,6 +185,46 @@ export default function NewAgentPage() {
       isAdmin={isAdmin}
       adminOnlyMessage="Only organization owners and admins can create agents."
     >
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Quick-start template
+        </p>
+        <p className="text-sm text-slate-500">
+          Pre-fill the form for a specific CLI execution engine.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {CLI_AGENT_TEMPLATES.map((template) => (
+            <button
+              key={template.tool}
+              type="button"
+              onClick={() =>
+                setIdentityProfile((current) => ({
+                  ...current,
+                  role: template.role,
+                  communication_style: template.communication_style,
+                  emoji: template.emoji,
+                  tool: template.tool,
+                }))
+              }
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-colors"
+            >
+              {template.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              setIdentityProfile({
+                ...DEFAULT_IDENTITY_PROFILE,
+                model: NO_MODEL_VALUE,
+              })
+            }
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
       <form
         onSubmit={handleSubmit}
         className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6"

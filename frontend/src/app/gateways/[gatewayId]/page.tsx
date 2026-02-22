@@ -142,7 +142,7 @@ export default function GatewayDetailPage() {
   const discoverQuery = useQuery({
     queryKey: ["gateway-discover", gatewayId],
     queryFn: () =>
-      customFetch<{ agents: { id: string; name: string }[] }>(
+      customFetch<{ data: { agents: { id: string; name: string }[] } }>(
         `/api/v1/gateways/${gatewayId}/agents/discover`,
         { method: "GET" },
       ),
@@ -154,7 +154,7 @@ export default function GatewayDetailPage() {
       const agentsToImport = agentIds.map((agentId) => ({
         id: agentId,
         name:
-          discoverQuery.data?.agents?.find((a) => a.id === agentId)?.name ??
+          discoverQuery.data?.data?.agents?.find((a) => a.id === agentId)?.name ??
           agentId,
       }));
       await customFetch(`/api/v1/gateways/${gatewayId}/agents/import`, {
@@ -394,13 +394,13 @@ export default function GatewayDetailPage() {
               <p className="text-sm text-rose-600">
                 Failed to load agents: {(discoverQuery.error as Error).message}
               </p>
-            ) : (discoverQuery.data?.agents ?? []).length === 0 ? (
+            ) : (discoverQuery.data?.data?.agents ?? []).length === 0 ? (
               <p className="text-sm text-slate-500">
                 No new agents found. All gateway agents are already imported.
               </p>
             ) : (
               <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
-                {(discoverQuery.data?.agents ?? []).map((agent) => (
+                {(discoverQuery.data?.data?.agents ?? []).map((agent) => (
                   <li
                     key={agent.id}
                     className="flex items-center gap-3 px-4 py-3"

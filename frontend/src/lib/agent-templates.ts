@@ -4,6 +4,38 @@ export const DEFAULT_IDENTITY_PROFILE = {
   emoji: ":gear:",
 };
 
+export type CliAgentTemplate = {
+  label: string;
+  tool: string;
+  role: string;
+  communication_style: string;
+  emoji: string;
+};
+
+export const CLI_AGENT_TEMPLATES: CliAgentTemplate[] = [
+  {
+    label: "Claude Code",
+    tool: "claude-code",
+    role: "Software Developer",
+    communication_style: "technical, precise",
+    emoji: ":wrench:",
+  },
+  {
+    label: "Gemini CLI",
+    tool: "gemini-cli",
+    role: "AI Researcher",
+    communication_style: "analytical",
+    emoji: ":brain:",
+  },
+  {
+    label: "Codex CLI",
+    tool: "codex-cli",
+    role: "Software Engineer",
+    communication_style: "concise",
+    emoji: ":rocket:",
+  },
+];
+
 export const DEFAULT_SOUL_TEMPLATE = `# SOUL.md
 
 _You're not a chatbot. You're becoming someone._

@@ -220,8 +220,13 @@ async def discover_gateway_agents(
     config = GatewayClientConfig(url=gateway.url, token=gateway.token)
     result = await openclaw_call("agents.list", {}, config=config)
     gateway_agents: list[dict] = []
-    if isinstance(result, dict):
-        gateway_agents = [a for a in (result.get("agents") or []) if isinstance(a, dict)]
+    
+    if isinstance(result, list):
+        gateway_agents = [a for a in result if isinstance(a, dict)]
+    elif isinstance(result, dict):
+        raw_agents = result.get("agents") or result.get("list") or result.get("items") or []
+        if isinstance(raw_agents, list):
+            gateway_agents = [a for a in raw_agents if isinstance(a, dict)]
 
     importable = [a for a in gateway_agents if a.get("id") not in existing_keys]
     return {"agents": importable}

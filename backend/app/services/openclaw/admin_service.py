@@ -30,6 +30,7 @@ from app.services.openclaw.db_service import OpenClawDBService
 from app.services.openclaw.gateway_compat import check_gateway_runtime_compatibility
 from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
 from app.services.openclaw.gateway_rpc import OpenClawGatewayError, openclaw_call
+from app.services.openclaw.internal.retry import GatewayBackoff
 from app.services.openclaw.provisioning import OpenClawGatewayProvisioner
 from app.services.openclaw.provisioning_db import (
     GatewayTemplateSyncOptions,
@@ -181,9 +182,16 @@ class GatewayAdminLifecycleService(OpenClawDBService):
     async def assert_gateway_runtime_compatible(self, *, url: str, token: str | None) -> None:
         """Validate that a gateway runtime meets minimum supported version."""
         config = GatewayClientConfig(url=url, token=token)
+        backoff = GatewayBackoff(
+            timeout_s=15.0,
+            base_delay_s=0.5,
+            max_delay_s=3.0,
+            jitter=0.1,
+            timeout_context="compatibility check",
+        )
         try:
-            result = await check_gateway_runtime_compatibility(config)
-        except OpenClawGatewayError as exc:
+            result = await backoff.run(lambda: check_gateway_runtime_compatibility(config))
+        except (OpenClawGatewayError, TimeoutError) as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Gateway compatibility check failed: {exc}",

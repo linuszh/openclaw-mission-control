@@ -107,7 +107,7 @@ export default function NewBoardPage() {
   const modelsQuery = useQuery({
     queryKey: ["gateway-models", displayGatewayId],
     queryFn: () =>
-      customFetch<{ models: GatewayModel[] }>(
+      customFetch<{ data: { models: GatewayModel[] } }>(
         `/api/v1/gateways/${displayGatewayId}/models?configured=true`,
         { method: "GET" },
       ),

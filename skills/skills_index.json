@@ -6,6 +6,20 @@
       "path": "skills/claude-code",
       "category": "development",
       "risk": "high"
+    },
+    {
+      "name": "Gemini CLI",
+      "description": "Delegate coding tasks to Google Gemini CLI using OAuth. Supports agentic Jules mode.",
+      "path": "skills/gemini-cli",
+      "category": "development",
+      "risk": "high"
+    },
+    {
+      "name": "Codex CLI",
+      "description": "Delegate coding tasks to OpenAI Codex CLI using OAuth login.",
+      "path": "skills/codex-cli",
+      "category": "development",
+      "risk": "high"
     }
   ]
 }

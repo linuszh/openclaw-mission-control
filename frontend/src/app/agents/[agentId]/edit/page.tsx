@@ -194,7 +194,7 @@ export default function EditAgentPage() {
   const modelsQuery = useQuery({
     queryKey: ["gateway-models", gatewayIdForModels],
     queryFn: () =>
-      customFetch<{ models: GatewayModel[] }>(
+      customFetch<{ data: { models: GatewayModel[] } }>(
         `/api/v1/gateways/${gatewayIdForModels}/models?configured=true`,
         { method: "GET" },
       ),

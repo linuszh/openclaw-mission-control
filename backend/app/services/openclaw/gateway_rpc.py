@@ -251,7 +251,7 @@ def _build_connect_params(config: GatewayConfig) -> dict[str, Any]:
         "role": "operator",
         "scopes": list(GATEWAY_OPERATOR_SCOPES),
         "client": {
-            "id": "gateway-client",
+            "id": "openclaw-control-ui",
             "version": "1.0.0",
             "platform": "web",
             "mode": "ui",

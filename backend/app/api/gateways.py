@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlmodel import col
 
 from app.api.deps import require_org_admin
@@ -25,6 +26,9 @@ from app.schemas.gateways import (
 )
 from app.schemas.pagination import DefaultLimitOffsetPage
 from app.services.openclaw.admin_service import GatewayAdminLifecycleService
+from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.openclaw.gateway_rpc import openclaw_call
+from app.services.openclaw.internal.agent_key import agent_key as _agent_key
 from app.services.openclaw.session_service import GatewayTemplateSyncQuery
 
 if TYPE_CHECKING:
@@ -160,6 +164,68 @@ async def sync_gateway_templates(
         organization_id=ctx.organization.id,
     )
     return await service.sync_templates(gateway, query=sync_query, auth=auth)
+
+
+@router.get("/{gateway_id}/agents/discover")
+async def discover_gateway_agents(
+    gateway_id: UUID,
+    session: AsyncSession = SESSION_DEP,
+    ctx: OrganizationContext = ORG_ADMIN_DEP,
+) -> dict:
+    """Return gateway agents not yet imported into Mission Control."""
+    service = GatewayAdminLifecycleService(session)
+    gateway = await service.require_gateway(
+        gateway_id=gateway_id,
+        organization_id=ctx.organization.id,
+    )
+    # Collect agent keys already tracked in Mission Control for this gateway.
+    existing_agents = await Agent.objects.filter_by(gateway_id=gateway_id).all(session)
+    existing_keys = {_agent_key(a) for a in existing_agents}
+
+    config = GatewayClientConfig(url=gateway.url, token=gateway.token)
+    result = await openclaw_call("agents.list", {}, config=config)
+    gateway_agents: list[dict] = []
+    if isinstance(result, dict):
+        gateway_agents = [a for a in (result.get("agents") or []) if isinstance(a, dict)]
+
+    importable = [a for a in gateway_agents if a.get("id") not in existing_keys]
+    return {"agents": importable}
+
+
+class _ImportAgentItem(BaseModel):
+    id: str
+    name: str
+
+
+class _ImportAgentsPayload(BaseModel):
+    agents: list[_ImportAgentItem]
+
+
+@router.post("/{gateway_id}/agents/import")
+async def import_gateway_agents(
+    gateway_id: UUID,
+    payload: _ImportAgentsPayload,
+    session: AsyncSession = SESSION_DEP,
+    ctx: OrganizationContext = ORG_ADMIN_DEP,
+) -> dict:
+    """Import existing gateway agents into Mission Control without re-provisioning."""
+    service = GatewayAdminLifecycleService(session)
+    gateway = await service.require_gateway(
+        gateway_id=gateway_id,
+        organization_id=ctx.organization.id,
+    )
+    imported: list[dict[str, Any]] = []
+    for item in payload.agents:
+        agent_data: dict[str, Any] = {
+            "id": uuid4(),
+            "gateway_id": gateway.id,
+            "name": item.name,
+            "status": "active",
+            "openclaw_session_id": f"agent:{item.id}:main",
+        }
+        agent = await crud.create(session, Agent, **agent_data)
+        imported.append({"id": str(agent.id), "name": agent.name})
+    return {"imported": imported}
 
 
 @router.delete("/{gateway_id}", response_model=OkResponse)

@@ -1,0 +1,11 @@
+{
+  "skills": [
+    {
+      "name": "Claude Code",
+      "description": "Delegate software development tasks to Claude Code CLI. Use this skill to write, edit, or review code, run tests, fix bugs, and perform any file-system-level development work.",
+      "path": "skills/claude-code",
+      "category": "development",
+      "risk": "high"
+    }
+  ]
+}

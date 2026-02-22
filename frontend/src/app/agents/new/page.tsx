@@ -30,10 +30,18 @@ import {
 } from "@/components/ui/select";
 import { DEFAULT_IDENTITY_PROFILE } from "@/lib/agent-templates";
 
+const MODEL_OPTIONS = [
+  { value: "", label: "Default (gateway setting)" },
+  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+  { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
+  { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
+];
+
 type IdentityProfile = {
   role: string;
   communication_style: string;
   emoji: string;
+  model: string;
 };
 
 const EMOJI_OPTIONS = [
@@ -62,6 +70,7 @@ const normalizeIdentityProfile = (
     role: profile.role.trim(),
     communication_style: profile.communication_style.trim(),
     emoji: profile.emoji.trim(),
+    model: profile.model.trim(),
   };
   const hasValue = Object.values(normalized).some((value) => value.length > 0);
   return hasValue ? normalized : null;
@@ -78,6 +87,7 @@ export default function NewAgentPage() {
   const [heartbeatEvery, setHeartbeatEvery] = useState("10m");
   const [identityProfile, setIdentityProfile] = useState<IdentityProfile>({
     ...DEFAULT_IDENTITY_PROFILE,
+    model: "",
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -248,7 +258,7 @@ export default function NewAgentPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Personality & behavior
           </p>
-          <div className="mt-4">
+          <div className="mt-4 space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-900">
                 Communication style
@@ -263,6 +273,35 @@ export default function NewAgentPage() {
                 }
                 disabled={isLoading}
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Model
+              </label>
+              <Select
+                value={identityProfile.model || ""}
+                onValueChange={(value) =>
+                  setIdentityProfile((current) => ({
+                    ...current,
+                    model: value,
+                  }))
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Default (gateway setting)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODEL_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                Override the default model for this agent.
+              </p>
             </div>
           </div>
         </div>

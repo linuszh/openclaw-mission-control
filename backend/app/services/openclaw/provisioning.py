@@ -442,6 +442,7 @@ class GatewayAgentRegistration:
     name: str
     workspace_path: str
     heartbeat: dict[str, Any]
+    model: str | None = None
 
 
 class GatewayControlPlane(ABC):
@@ -491,6 +492,7 @@ class GatewayControlPlane(ABC):
     async def patch_agent_heartbeats(
         self,
         entries: list[tuple[str, str, dict[str, Any]]],
+        models: dict[str, str] | None = None,
     ) -> None:
         raise NotImplementedError
 
@@ -547,8 +549,12 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
             },
             config=self._config,
         )
+        models = (
+            {registration.agent_id: registration.model} if registration.model else None
+        )
         await self.patch_agent_heartbeats(
             [(registration.agent_id, registration.workspace_path, registration.heartbeat)],
+            models=models,
         )
 
     async def delete_agent(self, agent_id: str, *, delete_files: bool = True) -> None:
@@ -604,10 +610,11 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
     async def patch_agent_heartbeats(
         self,
         entries: list[tuple[str, str, dict[str, Any]]],
+        models: dict[str, str] | None = None,
     ) -> None:
         base_hash, raw_list, config_data = await _gateway_config_agent_list(self._config)
         entry_by_id = _heartbeat_entry_map(entries)
-        new_list = _updated_agent_list(raw_list, entry_by_id)
+        new_list = _updated_agent_list(raw_list, entry_by_id, models=models)
 
         patch: dict[str, Any] = {"agents": {"list": new_list}}
         channels_patch = _channel_heartbeat_visibility_patch(config_data)
@@ -651,6 +658,7 @@ def _heartbeat_entry_map(
 def _updated_agent_list(
     raw_list: list[object],
     entry_by_id: dict[str, tuple[str, dict[str, Any]]],
+    models: dict[str, str] | None = None,
 ) -> list[object]:
     updated_ids: set[str] = set()
     new_list: list[object] = []
@@ -668,15 +676,22 @@ def _updated_agent_list(
         new_entry = dict(raw_entry)
         new_entry["workspace"] = workspace_path
         new_entry["heartbeat"] = heartbeat
+        if models and agent_id in models:
+            new_entry["model"] = models[agent_id]
         new_list.append(new_entry)
         updated_ids.add(agent_id)
 
     for agent_id, (workspace_path, heartbeat) in entry_by_id.items():
         if agent_id in updated_ids:
             continue
-        new_list.append(
-            {"id": agent_id, "workspace": workspace_path, "heartbeat": heartbeat},
-        )
+        new_entry: dict[str, Any] = {
+            "id": agent_id,
+            "workspace": workspace_path,
+            "heartbeat": heartbeat,
+        }
+        if models and agent_id in models:
+            new_entry["model"] = models[agent_id]
+        new_list.append(new_entry)
 
     return new_list
 
@@ -822,12 +837,15 @@ class BaseAgentLifecycleManager(ABC):
         agent_id = self._agent_id(agent)
         workspace_path = _workspace_path(agent, self._gateway.workspace_root)
         heartbeat = _heartbeat_config(agent)
+        identity_profile = agent.identity_profile if isinstance(agent.identity_profile, dict) else {}
+        model = identity_profile.get("model") or None
         await self._control_plane.upsert_agent(
             GatewayAgentRegistration(
                 agent_id=agent_id,
                 name=agent.name,
                 workspace_path=workspace_path,
                 heartbeat=heartbeat,
+                model=model,
             ),
         )
 

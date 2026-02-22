@@ -6,11 +6,19 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { useAuth } from "@/auth/clerk";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AgentsTable } from "@/components/agents/AgentsTable";
 import { DashboardPageLayout } from "@/components/templates/DashboardPageLayout";
 import { Button } from "@/components/ui/button";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { customFetch } from "@/api/mutator";
 
 import { ApiError } from "@/api/mutator";
 import {
@@ -52,6 +60,9 @@ export default function GatewayDetailPage() {
 
   const { isAdmin } = useOrganizationMembership(isSignedIn);
   const [deleteTarget, setDeleteTarget] = useState<AgentRead | null>(null);
+  const [showImport, setShowImport] = useState(false);
+  const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
+  const [importError, setImportError] = useState<string | null>(null);
   const agentsKey = getListAgentsApiV1AgentsGetQueryKey(
     gatewayId ? { gateway_id: gatewayId } : undefined,
   );
@@ -128,6 +139,40 @@ export default function GatewayDetailPage() {
     },
   });
 
+  const discoverQuery = useQuery({
+    queryKey: ["gateway-discover", gatewayId],
+    queryFn: () =>
+      customFetch<{ agents: { id: string; name: string }[] }>(
+        `/api/v1/gateways/${gatewayId}/agents/discover`,
+        { method: "GET" },
+      ),
+    enabled: Boolean(isSignedIn && isAdmin && gatewayId && showImport),
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (agentIds: string[]) => {
+      const agentsToImport = agentIds.map((agentId) => ({
+        id: agentId,
+        name:
+          discoverQuery.data?.agents?.find((a) => a.id === agentId)?.name ??
+          agentId,
+      }));
+      await customFetch(`/api/v1/gateways/${gatewayId}/agents/import`, {
+        method: "POST",
+        body: JSON.stringify({ agents: agentsToImport }),
+      });
+    },
+    onSuccess: () => {
+      setShowImport(false);
+      setSelectedAgentIds(new Set());
+      setImportError(null);
+      queryClient.invalidateQueries({ queryKey: agentsKey });
+    },
+    onError: (err: Error) => {
+      setImportError(err.message);
+    },
+  });
+
   const agents = useMemo(
     () =>
       agentsQuery.data?.status === 200
@@ -171,11 +216,23 @@ export default function GatewayDetailPage() {
               Back to gateways
             </Button>
             {isAdmin && gatewayId ? (
-              <Button
-                onClick={() => router.push(`/gateways/${gatewayId}/edit`)}
-              >
-                Edit gateway
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedAgentIds(new Set());
+                    setImportError(null);
+                    setShowImport(true);
+                  }}
+                >
+                  Import agents
+                </Button>
+                <Button
+                  onClick={() => router.push(`/gateways/${gatewayId}/edit`)}
+                >
+                  Edit gateway
+                </Button>
+              </>
             ) : null}
           </div>
         }
@@ -315,6 +372,93 @@ export default function GatewayDetailPage() {
         onConfirm={handleDelete}
         isConfirming={deleteMutation.isPending}
       />
+
+      <Dialog
+        open={showImport}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowImport(false);
+            setSelectedAgentIds(new Set());
+            setImportError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import agents from gateway</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {discoverQuery.isLoading ? (
+              <p className="text-sm text-slate-500">Fetching gateway agents…</p>
+            ) : discoverQuery.error ? (
+              <p className="text-sm text-rose-600">
+                Failed to load agents: {(discoverQuery.error as Error).message}
+              </p>
+            ) : (discoverQuery.data?.agents ?? []).length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No new agents found. All gateway agents are already imported.
+              </p>
+            ) : (
+              <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+                {(discoverQuery.data?.agents ?? []).map((agent) => (
+                  <li
+                    key={agent.id}
+                    className="flex items-center gap-3 px-4 py-3"
+                  >
+                    <input
+                      type="checkbox"
+                      id={`import-${agent.id}`}
+                      checked={selectedAgentIds.has(agent.id)}
+                      onChange={(e) => {
+                        setSelectedAgentIds((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(agent.id);
+                          else next.delete(agent.id);
+                          return next;
+                        });
+                      }}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    <label
+                      htmlFor={`import-${agent.id}`}
+                      className="flex-1 cursor-pointer text-sm text-slate-900"
+                    >
+                      <span className="font-medium">{agent.name}</span>
+                      <span className="ml-2 text-xs text-slate-400">
+                        {agent.id}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {importError ? (
+              <p className="text-sm text-rose-600">{importError}</p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowImport(false)}
+              disabled={importMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                importMutation.mutate(Array.from(selectedAgentIds))
+              }
+              disabled={
+                selectedAgentIds.size === 0 || importMutation.isPending
+              }
+            >
+              {importMutation.isPending
+                ? "Importing…"
+                : `Import ${selectedAgentIds.size} agent${selectedAgentIds.size !== 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

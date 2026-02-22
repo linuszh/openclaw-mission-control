@@ -5,11 +5,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./_importAgentItem";
+export * from "./_importAgentsPayload";
 export * from "./activityEventRead";
 export * from "./activityTaskCommentFeedItemRead";
 export * from "./agentCreate";
 export * from "./agentCreateHeartbeatConfig";
 export * from "./agentCreateIdentityProfile";
+export * from "./agentHealthStatusResponse";
 export * from "./agentHeartbeat";
 export * from "./agentHeartbeatCreate";
 export * from "./agentNudge";
@@ -86,6 +89,7 @@ export * from "./dashboardWipRangeSeries";
 export * from "./dashboardWipRangeSeriesBucket";
 export * from "./dashboardWipRangeSeriesRange";
 export * from "./dashboardWipSeriesSet";
+export * from "./discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet200";
 export * from "./gatewayCommandsResponse";
 export * from "./gatewayCreate";
 export * from "./gatewayLeadBroadcastBoardResult";
@@ -115,6 +119,7 @@ export * from "./healthHealthGet200";
 export * from "./healthStatusResponse";
 export * from "./healthzHealthzGet200";
 export * from "./hTTPValidationError";
+export * from "./importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost200";
 export * from "./installMarketplaceSkillApiV1SkillsMarketplaceSkillIdInstallPostParams";
 export * from "./limitOffsetPageTypeVarCustomizedActivityEventRead";
 export * from "./limitOffsetPageTypeVarCustomizedActivityTaskCommentFeedItemRead";
@@ -146,6 +151,7 @@ export * from "./listBoardsApiV1AgentBoardsGetParams";
 export * from "./listBoardsApiV1BoardsGetParams";
 export * from "./listBoardWebhookPayloadsApiV1BoardsBoardIdWebhooksWebhookIdPayloadsGetParams";
 export * from "./listBoardWebhooksApiV1BoardsBoardIdWebhooksGetParams";
+export * from "./listGatewayModelsApiV1GatewaysGatewayIdModelsGet200";
 export * from "./listGatewaysApiV1GatewaysGetParams";
 export * from "./listGatewaySessionsApiV1GatewaysSessionsGetParams";
 export * from "./listMarketplaceSkillsApiV1SkillsMarketplaceGetParams";

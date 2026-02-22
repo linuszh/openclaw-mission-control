@@ -31,6 +31,7 @@ class TaskBase(SQLModel):
     assigned_agent_id: UUID | None = None
     depends_on_task_ids: list[UUID] = Field(default_factory=list)
     tag_ids: list[UUID] = Field(default_factory=list)
+    model: str | None = None
 
 
 class TaskCreate(TaskBase):
@@ -53,6 +54,7 @@ class TaskUpdate(SQLModel):
     tag_ids: list[UUID] | None = None
     custom_field_values: TaskCustomFieldValues | None = None
     comment: NonEmptyStr | None = None
+    model: str | None = None
 
     @field_validator("comment", mode="before")
     @classmethod

@@ -27,6 +27,7 @@ export interface BoardRead {
   only_lead_can_change_status?: boolean;
   /** @minimum 0 */
   max_agents?: number;
+  default_model?: string | null;
   id: string;
   organization_id: string;
   created_at: string;

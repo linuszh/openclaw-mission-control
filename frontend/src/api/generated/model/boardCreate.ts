@@ -27,4 +27,5 @@ export interface BoardCreate {
   only_lead_can_change_status?: boolean;
   /** @minimum 0 */
   max_agents?: number;
+  default_model?: string | null;
 }

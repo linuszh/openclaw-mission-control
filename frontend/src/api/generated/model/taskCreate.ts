@@ -19,6 +19,7 @@ export interface TaskCreate {
   assigned_agent_id?: string | null;
   depends_on_task_ids?: string[];
   tag_ids?: string[];
+  model?: string | null;
   created_by_user_id?: string | null;
   custom_field_values?: TaskCreateCustomFieldValues;
 }

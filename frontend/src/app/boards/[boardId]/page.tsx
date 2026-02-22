@@ -58,7 +58,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError } from "@/api/mutator";
+import { ApiError, customFetch } from "@/api/mutator";
+import { useQuery } from "@tanstack/react-query";
 import { streamAgentsApiV1AgentsStreamGet } from "@/api/generated/agents/agents";
 import {
   streamApprovalsApiV1BoardsBoardIdApprovalsStreamGet,
@@ -816,6 +817,25 @@ export default function BoardDetailPage() {
   const canWrite = boardAccess.canWrite;
 
   const [board, setBoard] = useState<Board | null>(null);
+
+  const gatewayModelsQuery = useQuery({
+    queryKey: ["gateway-models", board?.gateway_id ?? null],
+    queryFn: () =>
+      customFetch<{ models: { id: string; name: string }[] }>(
+        `/api/v1/gateways/${board!.gateway_id}/models`,
+        { method: "GET" },
+      ),
+    enabled: Boolean(isSignedIn && board?.gateway_id),
+  });
+
+  const taskModelOptions = [
+    { value: "", label: "Default (board setting)" },
+    ...(gatewayModelsQuery.data?.models ?? []).map((m) => ({
+      value: m.id,
+      label: m.name,
+    })),
+  ];
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [groupSnapshot, setGroupSnapshot] = useState<BoardGroupSnapshot | null>(
@@ -1110,6 +1130,7 @@ export default function BoardDetailPage() {
   const [createTagIds, setCreateTagIds] = useState<string[]>([]);
   const [createCustomFieldValues, setCreateCustomFieldValues] =
     useState<TaskCustomFieldValues>({});
+  const [createModel, setCreateModel] = useState<string>("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -1943,6 +1964,7 @@ export default function BoardDetailPage() {
     setCreateDueDate("");
     setCreateTagIds([]);
     setCreateCustomFieldValues(defaultCreateCustomFieldValues);
+    setCreateModel("");
     setCreateError(null);
   };
 
@@ -1978,6 +2000,7 @@ export default function BoardDetailPage() {
         due_at: localDateInputToUtcIso(createDueDate),
         tag_ids: createTagIds,
         custom_field_values: createCustomFieldPayload,
+        model: createModel || null,
       };
       const result = await createTaskApiV1BoardsBoardIdTasksPost(
         boardId,
@@ -4448,6 +4471,25 @@ export default function BoardDetailPage() {
                 onChange={(event) => setCreateDueDate(event.target.value)}
                 disabled={!canWrite || isCreating}
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-strong">Model</label>
+              <Select
+                value={createModel}
+                onValueChange={setCreateModel}
+                disabled={!canWrite || isCreating}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Default (board setting)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {taskModelOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">

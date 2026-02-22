@@ -26,4 +26,5 @@ export interface BoardUpdate {
   block_status_changes_with_pending_approval?: boolean | null;
   only_lead_can_change_status?: boolean | null;
   max_agents?: number | null;
+  default_model?: string | null;
 }

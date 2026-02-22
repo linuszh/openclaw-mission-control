@@ -20,4 +20,5 @@ export interface TaskUpdate {
   tag_ids?: string[] | null;
   custom_field_values?: TaskUpdateCustomFieldValues;
   comment?: string | null;
+  model?: string | null;
 }

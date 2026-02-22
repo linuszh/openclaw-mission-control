@@ -21,6 +21,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  DiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet200,
   GatewayCommandsResponse,
   GatewayCreate,
   GatewayRead,
@@ -35,12 +36,15 @@ import type {
   GetGatewaySessionApiV1GatewaysSessionsSessionIdGetParams,
   GetSessionHistoryApiV1GatewaysSessionsSessionIdHistoryGetParams,
   HTTPValidationError,
+  ImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost200,
   LimitOffsetPageTypeVarCustomizedGatewayRead,
+  ListGatewayModelsApiV1GatewaysGatewayIdModelsGet200,
   ListGatewaySessionsApiV1GatewaysSessionsGetParams,
   ListGatewaysApiV1GatewaysGetParams,
   OkResponse,
   SendGatewaySessionMessageApiV1GatewaysSessionsSessionIdMessagePostParams,
   SyncGatewayTemplatesApiV1GatewaysGatewayIdTemplatesSyncPostParams,
+  _ImportAgentsPayload,
 } from ".././model";
 
 import { customFetch } from "../../mutator";
@@ -2427,6 +2431,687 @@ export const useSyncGatewayTemplatesApiV1GatewaysGatewayIdTemplatesSyncPost = <
 > => {
   return useMutation(
     getSyncGatewayTemplatesApiV1GatewaysGatewayIdTemplatesSyncPostMutationOptions(
+      options,
+    ),
+    queryClient,
+  );
+};
+/**
+ * Return models available on the gateway.
+ * @summary List Gateway Models
+ */
+export type listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse200 = {
+  data: ListGatewayModelsApiV1GatewaysGatewayIdModelsGet200;
+  status: 200;
+};
+
+export type listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponseSuccess =
+  listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse200 & {
+    headers: Headers;
+  };
+export type listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponseError =
+  listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse422 & {
+    headers: Headers;
+  };
+
+export type listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse =
+  | listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponseSuccess
+  | listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponseError;
+
+export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetUrl = (
+  gatewayId: string,
+) => {
+  return `/api/v1/gateways/${gatewayId}/models`;
+};
+
+export const listGatewayModelsApiV1GatewaysGatewayIdModelsGet = async (
+  gatewayId: string,
+  options?: RequestInit,
+): Promise<listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse> => {
+  return customFetch<listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse>(
+    getListGatewayModelsApiV1GatewaysGatewayIdModelsGetUrl(gatewayId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryKey = (
+  gatewayId: string,
+) => {
+  return [`/api/v1/gateways/${gatewayId}/models`] as const;
+};
+
+export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryOptions = <
+  TData = Awaited<
+    ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+        >,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryKey(gatewayId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>>
+  > = ({ signal }) =>
+    listGatewayModelsApiV1GatewaysGatewayIdModelsGet(gatewayId, {
+      signal,
+      ...requestOptions,
+    });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!gatewayId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<
+      ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+    >,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>>
+  >;
+export type ListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryError =
+  HTTPValidationError;
+
+export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
+  TData = Awaited<
+    ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+        >,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<
+            ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+          >,
+          TError,
+          Awaited<
+            ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+          >
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
+  TData = Awaited<
+    ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+        >,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<
+            ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+          >,
+          TError,
+          Awaited<
+            ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+          >
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
+  TData = Awaited<
+    ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+        >,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary List Gateway Models
+ */
+
+export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
+  TData = Awaited<
+    ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>
+        >,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryOptions(
+      gatewayId,
+      options,
+    );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Return gateway agents not yet imported into Mission Control.
+ * @summary Discover Gateway Agents
+ */
+export type discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponse200 =
+  {
+    data: DiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet200;
+    status: 200;
+  };
+
+export type discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponse422 =
+  {
+    data: HTTPValidationError;
+    status: 422;
+  };
+
+export type discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponseSuccess =
+  discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponse200 & {
+    headers: Headers;
+  };
+export type discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponseError =
+  discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponse422 & {
+    headers: Headers;
+  };
+
+export type discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponse =
+
+    | discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponseSuccess
+    | discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponseError;
+
+export const getDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetUrl =
+  (gatewayId: string) => {
+    return `/api/v1/gateways/${gatewayId}/agents/discover`;
+  };
+
+export const discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet =
+  async (
+    gatewayId: string,
+    options?: RequestInit,
+  ): Promise<discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponse> => {
+    return customFetch<discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetResponse>(
+      getDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetUrl(
+        gatewayId,
+      ),
+      {
+        ...options,
+        method: "GET",
+      },
+    );
+  };
+
+export const getDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetQueryKey =
+  (gatewayId: string) => {
+    return [`/api/v1/gateways/${gatewayId}/agents/discover`] as const;
+  };
+
+export const getDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetQueryOptions =
+  <
+    TData = Awaited<
+      ReturnType<
+        typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+      >
+    >,
+    TError = HTTPValidationError,
+  >(
+    gatewayId: string,
+    options?: {
+      query?: Partial<
+        UseQueryOptions<
+          Awaited<
+            ReturnType<
+              typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+            >
+          >,
+          TError,
+          TData
+        >
+      >;
+      request?: SecondParameter<typeof customFetch>;
+    },
+  ) => {
+    const { query: queryOptions, request: requestOptions } = options ?? {};
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetQueryKey(
+        gatewayId,
+      );
+
+    const queryFn: QueryFunction<
+      Awaited<
+        ReturnType<
+          typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+        >
+      >
+    > = ({ signal }) =>
+      discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet(gatewayId, {
+        signal,
+        ...requestOptions,
+      });
+
+    return {
+      queryKey,
+      queryFn,
+      enabled: !!gatewayId,
+      ...queryOptions,
+    } as UseQueryOptions<
+      Awaited<
+        ReturnType<
+          typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+        >
+      >,
+      TError,
+      TData
+    > & { queryKey: DataTag<QueryKey, TData, TError> };
+  };
+
+export type DiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetQueryResult =
+  NonNullable<
+    Awaited<
+      ReturnType<
+        typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+      >
+    >
+  >;
+export type DiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetQueryError =
+  HTTPValidationError;
+
+export function useDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet<
+  TData = Awaited<
+    ReturnType<
+      typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+    >
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+          >
+        >,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<
+            ReturnType<
+              typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+            >
+          >,
+          TError,
+          Awaited<
+            ReturnType<
+              typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+            >
+          >
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet<
+  TData = Awaited<
+    ReturnType<
+      typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+    >
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+          >
+        >,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<
+            ReturnType<
+              typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+            >
+          >,
+          TError,
+          Awaited<
+            ReturnType<
+              typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+            >
+          >
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet<
+  TData = Awaited<
+    ReturnType<
+      typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+    >
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary Discover Gateway Agents
+ */
+
+export function useDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet<
+  TData = Awaited<
+    ReturnType<
+      typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+    >
+  >,
+  TError = HTTPValidationError,
+>(
+  gatewayId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<
+          ReturnType<
+            typeof discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet
+          >
+        >,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getDiscoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGetQueryOptions(
+      gatewayId,
+      options,
+    );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Import existing gateway agents into Mission Control without re-provisioning.
+ * @summary Import Gateway Agents
+ */
+export type importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponse200 =
+  {
+    data: ImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost200;
+    status: 200;
+  };
+
+export type importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponse422 =
+  {
+    data: HTTPValidationError;
+    status: 422;
+  };
+
+export type importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponseSuccess =
+  importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponse200 & {
+    headers: Headers;
+  };
+export type importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponseError =
+  importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponse422 & {
+    headers: Headers;
+  };
+
+export type importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponse =
+  | importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponseSuccess
+  | importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponseError;
+
+export const getImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostUrl = (
+  gatewayId: string,
+) => {
+  return `/api/v1/gateways/${gatewayId}/agents/import`;
+};
+
+export const importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost = async (
+  gatewayId: string,
+  _importAgentsPayload: _ImportAgentsPayload,
+  options?: RequestInit,
+): Promise<importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponse> => {
+  return customFetch<importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostResponse>(
+    getImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostUrl(gatewayId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(_importAgentsPayload),
+    },
+  );
+};
+
+export const getImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostMutationOptions =
+  <TError = HTTPValidationError, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<
+          typeof importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost
+        >
+      >,
+      TError,
+      { gatewayId: string; data: _ImportAgentsPayload },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  }): UseMutationOptions<
+    Awaited<
+      ReturnType<
+        typeof importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost
+      >
+    >,
+    TError,
+    { gatewayId: string; data: _ImportAgentsPayload },
+    TContext
+  > => {
+    const mutationKey = [
+      "importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost",
+    ];
+    const { mutation: mutationOptions, request: requestOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey }, request: undefined };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<
+          typeof importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost
+        >
+      >,
+      { gatewayId: string; data: _ImportAgentsPayload }
+    > = (props) => {
+      const { gatewayId, data } = props ?? {};
+
+      return importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost(
+        gatewayId,
+        data,
+        requestOptions,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type ImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<
+        typeof importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost
+      >
+    >
+  >;
+export type ImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostMutationBody =
+  _ImportAgentsPayload;
+export type ImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Import Gateway Agents
+ */
+export const useImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<
+          typeof importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost
+        >
+      >,
+      TError,
+      { gatewayId: string; data: _ImportAgentsPayload },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<
+    ReturnType<typeof importGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost>
+  >,
+  TError,
+  { gatewayId: string; data: _ImportAgentsPayload },
+  TContext
+> => {
+  return useMutation(
+    getImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPostMutationOptions(
       options,
     ),
     queryClient,

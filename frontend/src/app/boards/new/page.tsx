@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/auth/clerk";
 
-import { ApiError } from "@/api/mutator";
+import { ApiError, customFetch } from "@/api/mutator";
 import { useCreateBoardApiV1BoardsPost } from "@/api/generated/boards/boards";
 import {
   type listBoardGroupsApiV1BoardGroupsGetResponse,
@@ -24,7 +24,18 @@ import { DashboardPageLayout } from "@/components/templates/DashboardPageLayout"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SearchableSelect from "@/components/ui/searchable-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useQuery } from "@tanstack/react-query";
+
+type GatewayModel = { id: string; name: string };
+const DEFAULT_MODEL_OPTION = { value: "", label: "Default (gateway setting)" };
 
 const slugify = (value: string) =>
   value
@@ -43,6 +54,7 @@ export default function NewBoardPage() {
   const [description, setDescription] = useState("");
   const [gatewayId, setGatewayId] = useState<string>("");
   const [boardGroupId, setBoardGroupId] = useState<string>("none");
+  const [defaultModel, setDefaultModel] = useState<string>("");
 
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +102,25 @@ export default function NewBoardPage() {
     return groupsQuery.data.data.items ?? [];
   }, [groupsQuery.data]);
   const displayGatewayId = gatewayId || gateways[0]?.id || "";
+
+  const modelsQuery = useQuery({
+    queryKey: ["gateway-models", displayGatewayId],
+    queryFn: () =>
+      customFetch<{ models: GatewayModel[] }>(
+        `/api/v1/gateways/${displayGatewayId}/models`,
+        { method: "GET" },
+      ),
+    enabled: Boolean(isSignedIn && isAdmin && displayGatewayId),
+  });
+
+  const modelOptions = [
+    DEFAULT_MODEL_OPTION,
+    ...(modelsQuery.data?.models ?? []).map((m) => ({
+      value: m.id,
+      label: m.name,
+    })),
+  ];
+
   const isLoading =
     gatewaysQuery.isLoading ||
     groupsQuery.isLoading ||
@@ -143,6 +174,7 @@ export default function NewBoardPage() {
         description: trimmedDescription,
         gateway_id: resolvedGatewayId,
         board_group_id: boardGroupId === "none" ? null : boardGroupId,
+        default_model: defaultModel || null,
       },
     });
   };
@@ -215,6 +247,30 @@ export default function NewBoardPage() {
               />
               <p className="text-xs text-slate-500">
                 Optional. Groups increase cross-board visibility.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Default model
+              </label>
+              <Select
+                value={defaultModel}
+                onValueChange={setDefaultModel}
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Default (gateway setting)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                Override the default model for agents on this board.
               </p>
             </div>
           </div>

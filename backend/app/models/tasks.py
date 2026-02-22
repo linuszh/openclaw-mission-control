@@ -41,6 +41,7 @@ class Task(TenantScoped, table=True):
     )
     auto_created: bool = Field(default=False)
     auto_reason: str | None = None
+    model: str | None = None
 
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)

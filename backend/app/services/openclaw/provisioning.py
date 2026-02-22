@@ -612,18 +612,33 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         entries: list[tuple[str, str, dict[str, Any]]],
         models: dict[str, str] | None = None,
     ) -> None:
-        base_hash, raw_list, config_data = await _gateway_config_agent_list(self._config)
-        entry_by_id = _heartbeat_entry_map(entries)
-        new_list = _updated_agent_list(raw_list, entry_by_id, models=models)
+        import asyncio as _asyncio
 
-        patch: dict[str, Any] = {"agents": {"list": new_list}}
-        channels_patch = _channel_heartbeat_visibility_patch(config_data)
-        if channels_patch is not None:
-            patch["channels"] = channels_patch
-        params = {"raw": json.dumps(patch)}
-        if base_hash:
-            params["baseHash"] = base_hash
-        await openclaw_call("config.patch", params, config=self._config)
+        _MAX_RETRIES = 5
+        _RETRY_DELAY = 0.5
+
+        entry_by_id = _heartbeat_entry_map(entries)
+        for attempt in range(_MAX_RETRIES):
+            base_hash, raw_list, config_data = await _gateway_config_agent_list(self._config)
+            new_list = _updated_agent_list(raw_list, entry_by_id, models=models)
+
+            patch: dict[str, Any] = {"agents": {"list": new_list}}
+            channels_patch = _channel_heartbeat_visibility_patch(config_data)
+            if channels_patch is not None:
+                patch["channels"] = channels_patch
+            params = {"raw": json.dumps(patch)}
+            if base_hash:
+                params["baseHash"] = base_hash
+            try:
+                await openclaw_call("config.patch", params, config=self._config)
+                return
+            except OpenClawGatewayError as exc:
+                # "invalid config" is returned on baseHash mismatch (concurrent writes).
+                # Re-read the config and retry with a fresh hash.
+                if "invalid config" in str(exc).lower() and attempt < _MAX_RETRIES - 1:
+                    await _asyncio.sleep(_RETRY_DELAY * (attempt + 1))
+                    continue
+                raise
 
 
 async def _gateway_config_agent_list(
@@ -667,7 +682,7 @@ def _updated_agent_list(
         if not isinstance(raw_entry, dict):
             new_list.append(raw_entry)
             continue
-        agent_id = raw_entry.get("id")
+        agent_id = raw_entry.get("agentId") or raw_entry.get("id")
         if not isinstance(agent_id, str) or agent_id not in entry_by_id:
             new_list.append(raw_entry)
             continue
@@ -685,7 +700,7 @@ def _updated_agent_list(
         if agent_id in updated_ids:
             continue
         new_entry: dict[str, Any] = {
-            "id": agent_id,
+            "agentId": agent_id,
             "workspace": workspace_path,
             "heartbeat": heartbeat,
         }

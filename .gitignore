@@ -22,4 +22,4 @@ node_modules/
 backend/~/
 backend/coverage.*
 backend/.coverage
-frontend/coverage
+frontend/coveragefrontend/tmp/

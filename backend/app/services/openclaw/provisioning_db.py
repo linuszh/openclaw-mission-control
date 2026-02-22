@@ -835,11 +835,20 @@ class AgentLifecycleService(OpenClawDBService):
     @classmethod
     def with_computed_status(cls, agent: Agent) -> Agent:
         now = utcnow()
-        if agent.status in {"deleting", "updating"}:
+        if agent.status == "deleting":
             return agent
+
+        time_since_seen = (now - agent.last_seen_at) if agent.last_seen_at else None
+        time_since_updated = now - agent.updated_at if agent.updated_at else None
+
+        if agent.status == "updating":
+            if time_since_updated is not None and time_since_updated > OFFLINE_AFTER:
+                agent.status = "offline" if agent.last_seen_at else "provisioning"
+            return agent
+
         if agent.last_seen_at is None:
             agent.status = "provisioning"
-        elif now - agent.last_seen_at > OFFLINE_AFTER:
+        elif time_since_seen is not None and time_since_seen > OFFLINE_AFTER:
             agent.status = "offline"
         return agent
 
@@ -1112,12 +1121,14 @@ class AgentLifecycleService(OpenClawDBService):
                 agent.id,
             )
         except OpenClawGatewayError as exc:
+            agent.status = "offline" if agent.last_seen_at else "provisioning"
             self.record_instruction_failure(
                 self.session,
                 agent,
                 str(exc),
                 action,
             )
+            self.session.add(agent)
             await self.session.commit()
             self.logger.error(
                 "agent.provision.gateway_error action=%s agent_id=%s error=%s",
@@ -1131,12 +1142,14 @@ class AgentLifecycleService(OpenClawDBService):
                     detail=f"Gateway {action} failed: {exc}",
                 ) from exc
         except (OSError, RuntimeError, ValueError) as exc:  # pragma: no cover
+            agent.status = "offline" if agent.last_seen_at else "provisioning"
             self.record_instruction_failure(
                 self.session,
                 agent,
                 str(exc),
                 action,
             )
+            self.session.add(agent)
             await self.session.commit()
             self.logger.critical(
                 "agent.provision.runtime_error action=%s agent_id=%s error=%s",

@@ -4,10 +4,11 @@ export const dynamic = "force-dynamic";
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/auth/clerk";
 
-import { ApiError } from "@/api/mutator";
+import { ApiError, customFetch } from "@/api/mutator";
 import {
   type getAgentApiV1AgentsAgentIdGetResponse,
   useGetAgentApiV1AgentsAgentIdGet,
@@ -33,10 +34,14 @@ import {
 } from "@/components/ui/select";
 import { DEFAULT_IDENTITY_PROFILE } from "@/lib/agent-templates";
 
+type GatewayModel = { id: string; name: string };
+const DEFAULT_MODEL_OPTION = { value: "", label: "Default (gateway setting)" };
+
 type IdentityProfile = {
   role: string;
   communication_style: string;
   emoji: string;
+  model: string;
 };
 
 const EMOJI_OPTIONS = [
@@ -70,6 +75,7 @@ const mergeIdentityProfile = (
     role: patch.role.trim(),
     communication_style: patch.communication_style.trim(),
     emoji: patch.emoji.trim(),
+    model: patch.model.trim(),
   };
   for (const [key, value] of Object.entries(updates)) {
     if (value) {
@@ -89,6 +95,7 @@ const withIdentityDefaults = (
     profile?.communication_style ??
     DEFAULT_IDENTITY_PROFILE.communication_style,
   emoji: profile?.emoji ?? DEFAULT_IDENTITY_PROFILE.emoji,
+  model: profile?.model ?? "",
 });
 
 export default function EditAgentPage() {
@@ -176,10 +183,30 @@ export default function EditAgentPage() {
             ? record.communication_style
             : undefined,
         emoji: typeof record.emoji === "string" ? record.emoji : undefined,
+        model: typeof record.model === "string" ? record.model : undefined,
       });
     }
     return withIdentityDefaults(null);
   }, [loadedAgent?.identity_profile]);
+
+  const gatewayIdForModels = loadedAgent?.gateway_id ?? null;
+  const modelsQuery = useQuery({
+    queryKey: ["gateway-models", gatewayIdForModels],
+    queryFn: () =>
+      customFetch<{ models: GatewayModel[] }>(
+        `/api/v1/gateways/${gatewayIdForModels}/models`,
+        { method: "GET" },
+      ),
+    enabled: Boolean(isSignedIn && gatewayIdForModels),
+  });
+
+  const modelOptions = [
+    DEFAULT_MODEL_OPTION,
+    ...(modelsQuery.data?.models ?? []).map((m) => ({
+      value: m.id,
+      label: m.name,
+    })),
+  ];
 
   const isLoading =
     boardsQuery.isLoading || agentQuery.isLoading || updateMutation.isPending;
@@ -415,7 +442,7 @@ export default function EditAgentPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Personality & behavior
           </p>
-          <div className="mt-4">
+          <div className="mt-4 space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-900">
                 Communication style
@@ -430,6 +457,35 @@ export default function EditAgentPage() {
                 }
                 disabled={isLoading}
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                Model
+              </label>
+              <Select
+                value={resolvedIdentityProfile.model || ""}
+                onValueChange={(value) =>
+                  setIdentityProfile({
+                    ...resolvedIdentityProfile,
+                    model: value,
+                  })
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Default (gateway setting)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                Override the default model for this agent.
+              </p>
             </div>
           </div>
         </div>

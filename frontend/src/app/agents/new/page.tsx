@@ -4,10 +4,11 @@ export const dynamic = "force-dynamic";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/auth/clerk";
 
-import { ApiError } from "@/api/mutator";
+import { ApiError, customFetch } from "@/api/mutator";
 import {
   type listBoardsApiV1BoardsGetResponse,
   useListBoardsApiV1BoardsGet,
@@ -30,12 +31,9 @@ import {
 } from "@/components/ui/select";
 import { DEFAULT_IDENTITY_PROFILE } from "@/lib/agent-templates";
 
-const MODEL_OPTIONS = [
-  { value: "", label: "Default (gateway setting)" },
-  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-  { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
-  { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
-];
+type GatewayModel = { id: string; name: string };
+
+const DEFAULT_MODEL_OPTION = { value: "", label: "Default (gateway setting)" };
 
 type IdentityProfile = {
   role: string;
@@ -117,6 +115,28 @@ export default function NewAgentPage() {
   const boards =
     boardsQuery.data?.status === 200 ? (boardsQuery.data.data.items ?? []) : [];
   const displayBoardId = boardId || boards[0]?.id || "";
+
+  const selectedBoard = boards.find((b) => b.id === displayBoardId);
+  const gatewayIdForModels = selectedBoard?.gateway_id ?? null;
+
+  const modelsQuery = useQuery({
+    queryKey: ["gateway-models", gatewayIdForModels],
+    queryFn: () =>
+      customFetch<{ models: GatewayModel[] }>(
+        `/api/v1/gateways/${gatewayIdForModels}/models`,
+        { method: "GET" },
+      ),
+    enabled: Boolean(isSignedIn && isAdmin && gatewayIdForModels),
+  });
+
+  const modelOptions = [
+    DEFAULT_MODEL_OPTION,
+    ...(modelsQuery.data?.models ?? []).map((m) => ({
+      value: m.id,
+      label: m.name,
+    })),
+  ];
+
   const isLoading = boardsQuery.isLoading || createAgentMutation.isPending;
   const errorMessage = error ?? boardsQuery.error?.message ?? null;
 
@@ -292,7 +312,7 @@ export default function NewAgentPage() {
                   <SelectValue placeholder="Default (gateway setting)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MODEL_OPTIONS.map((option) => (
+                  {modelOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

@@ -6,7 +6,6 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi_pagination.limit_offset import LimitOffsetPage
 from sqlmodel import col, select
 
 from app.schemas.pagination import DefaultLimitOffsetPage
@@ -94,6 +93,7 @@ async def list_emails(
         .where(
             col(EmailMessage.organization_id) == ctx.organization.id,
             col(EmailMessage.status) != "archived",
+            col(EmailMessage.status) != "deleted",
         )
         .order_by(col(EmailMessage.received_at).desc())
     )
@@ -134,7 +134,8 @@ async def delete_email(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Email message not found",
         )
-    await session.delete(email_msg)
+    email_msg.status = "deleted"
+    session.add(email_msg)
     await session.commit()
 
 

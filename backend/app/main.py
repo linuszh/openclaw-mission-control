@@ -20,6 +20,7 @@ from app.api.board_memory import router as board_memory_router
 from app.api.board_onboarding import router as board_onboarding_router
 from app.api.board_webhooks import router as board_webhooks_router
 from app.api.boards import router as boards_router
+from app.api.bot import router as bot_router
 from app.api.gateway import router as gateway_router
 from app.api.gateways import router as gateways_router
 from app.api.metrics import router as metrics_router
@@ -277,6 +278,7 @@ api_v1.include_router(boards_router)
 api_v1.include_router(board_memory_router)
 api_v1.include_router(board_webhooks_router)
 api_v1.include_router(board_onboarding_router)
+api_v1.include_router(bot_router)
 api_v1.include_router(approvals_router)
 api_v1.include_router(tasks_router)
 api_v1.include_router(telegram_webhooks_router)

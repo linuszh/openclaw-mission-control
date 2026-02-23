@@ -83,8 +83,16 @@ if TYPE_CHECKING:
     from sqlmodel.ext.asyncio.session import AsyncSession
     from sqlmodel.sql.expression import SelectOfScalar
 
-    from app.core.auth import AuthContext
-    from app.models.users import User
+from app.api.deps import (
+    ActorContext,
+    get_board_for_actor_read,
+    get_board_for_user_write,
+    get_task_or_404,
+    require_admin_auth,
+    require_admin_or_agent,
+    AuthContext,
+)
+from app.models.users import User
 
 router = APIRouter(prefix="/boards/{board_id}/tasks", tags=["tasks"])
 

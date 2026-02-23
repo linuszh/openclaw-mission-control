@@ -19,6 +19,7 @@ export * from "./agentNudge";
 export * from "./agentRead";
 export * from "./agentReadHeartbeatConfig";
 export * from "./agentReadIdentityProfile";
+export * from "./agentSyncResponse";
 export * from "./agentUpdate";
 export * from "./agentUpdateHeartbeatConfig";
 export * from "./agentUpdateIdentityProfile";

@@ -13,6 +13,7 @@ import {
   type getAgentApiV1AgentsAgentIdGetResponse,
   useDeleteAgentApiV1AgentsAgentIdDelete,
   useGetAgentApiV1AgentsAgentIdGet,
+  useSyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost,
 } from "@/api/generated/agents/agents";
 import {
   type listActivityApiV1ActivityGetResponse,
@@ -128,6 +129,35 @@ export default function AgentDetailPage() {
     },
   });
 
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const syncMutation =
+    useSyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost<ApiError>({
+      mutation: {
+        onSuccess: (data) => {
+          const fields =
+            data.status === 200 ? (data.data.synced_fields ?? []) : [];
+          setSyncMessage(
+            fields.length > 0
+              ? `Synced: ${fields.join(", ")}`
+              : "Already up to date",
+          );
+          agentQuery.refetch();
+          setTimeout(() => setSyncMessage(null), 4000);
+        },
+        onError: () => {
+          setSyncMessage("Sync failed — check gateway connection");
+          setTimeout(() => setSyncMessage(null), 4000);
+        },
+      },
+    });
+
+  const handleSync = () => {
+    if (!agentId) return;
+    setSyncMessage(null);
+    syncMutation.mutate({ agentId });
+  };
+
   const isLoading =
     agentQuery.isLoading || activityQuery.isLoading || boardsQuery.isLoading;
   const error =
@@ -188,6 +218,23 @@ export default function AgentDetailPage() {
                 >
                   Back to agents
                 </Button>
+                {agent && isAdmin ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSync}
+                      disabled={syncMutation.isPending}
+                    >
+                      {syncMutation.isPending ? "Syncing…" : "Sync from Gateway"}
+                    </Button>
+                    {syncMessage && (
+                      <span className="text-xs text-muted-foreground">
+                        {syncMessage}
+                      </span>
+                    )}
+                  </>
+                ) : null}
                 {agent ? (
                   <Link
                     href={`/agents/${agent.id}/edit`}

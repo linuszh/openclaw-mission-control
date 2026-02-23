@@ -7,14 +7,12 @@
 
 export type ListEmailsApiV1EmailsGetParams = {
   /**
-   * Page number
    * @minimum 1
+   * @maximum 200
    */
-  page?: number;
+  limit?: number;
   /**
-   * Page size
-   * @minimum 1
-   * @maximum 100
+   * @minimum 0
    */
-  size?: number;
+  offset?: number;
 };

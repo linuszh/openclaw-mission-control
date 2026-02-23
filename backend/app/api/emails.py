@@ -25,6 +25,7 @@ from app.schemas.email import (
     EmailConvertRequest,
     EmailMessageRead,
     EmailSummarizeResponse,
+    EmailUpdateRequest,
 )
 from app.schemas.tasks import TaskRead
 from app.services.activity_log import record_activity
@@ -87,13 +88,54 @@ async def list_emails(
     ctx: OrganizationContext = ORG_MEMBER_DEP,
     session: AsyncSession = SESSION_DEP,
 ) -> Any:
-    """List all synced emails for the current organization."""
+    """List all synced emails for the current organization (excludes archived)."""
     statement = (
         select(EmailMessage)
-        .where(col(EmailMessage.organization_id) == ctx.organization.id)
+        .where(
+            col(EmailMessage.organization_id) == ctx.organization.id,
+            col(EmailMessage.status) != "archived",
+        )
         .order_by(col(EmailMessage.received_at).desc())
     )
     return await paginate(session, statement)
+
+
+@router.patch("/{email_id}", response_model=EmailMessageRead)
+async def update_email(
+    email_id: UUID,
+    payload: EmailUpdateRequest,
+    ctx: OrganizationContext = ORG_MEMBER_DEP,
+    session: AsyncSession = SESSION_DEP,
+) -> EmailMessage:
+    """Update an email message (e.g. archive it by setting status to 'archived')."""
+    email_msg = await session.get(EmailMessage, email_id)
+    if not email_msg or email_msg.organization_id != ctx.organization.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
+    email_msg.status = payload.status
+    session.add(email_msg)
+    await session.commit()
+    await session.refresh(email_msg)
+    return email_msg
+
+
+@router.delete("/{email_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_email(
+    email_id: UUID,
+    ctx: OrganizationContext = ORG_MEMBER_DEP,
+    session: AsyncSession = SESSION_DEP,
+) -> None:
+    """Permanently delete a single email message."""
+    email_msg = await session.get(EmailMessage, email_id)
+    if not email_msg or email_msg.organization_id != ctx.organization.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
+    await session.delete(email_msg)
+    await session.commit()
 
 
 @router.get("/accounts", response_model=list[EmailAccountRead])

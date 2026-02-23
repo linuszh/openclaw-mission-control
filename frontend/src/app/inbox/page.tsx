@@ -9,12 +9,14 @@ import { SignedIn, SignedOut, SignInButton, useAuth } from "@/auth/clerk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import {
+  Archive,
   CheckCircle2,
   ChevronRight,
   Clock,
   Loader2,
   Mail,
   Sparkles,
+  Trash2,
   XCircle,
 } from "lucide-react";
 
@@ -27,7 +29,9 @@ import { useListBoardsApiV1BoardsGet } from "@/api/generated/boards/boards";
 import {
   useListEmailsApiV1EmailsGet,
   useConvertEmailToTaskApiV1EmailsEmailIdConvertPost,
+  useDeleteEmailApiV1EmailsEmailIdDelete,
   useSummarizeEmailApiV1EmailsEmailIdSummarizePost,
+  useUpdateEmailApiV1EmailsEmailIdPatch,
 } from "@/api/generated/emails/emails";
 import type { ApprovalRead, BoardRead } from "@/api/generated/model";
 import type { EmailMessageRead } from "@/api/generated/model/emailMessageRead";
@@ -327,6 +331,23 @@ function EmailTab({ boards }: { boards: BoardRead[] }) {
       : [];
   const isLoading = emailsQuery.isLoading;
 
+  const archiveMutation = useUpdateEmailApiV1EmailsEmailIdPatch({
+    mutation: {
+      onSuccess: () => emailsQuery.refetch(),
+    },
+  });
+
+  const deleteMutation = useDeleteEmailApiV1EmailsEmailIdDelete({
+    mutation: {
+      onSuccess: () => {
+        emailsQuery.refetch();
+        setSelectedEmail((prev) =>
+          prev?.id === deleteMutation.variables?.emailId ? null : prev,
+        );
+      },
+    },
+  });
+
   const handleSelect = (email: EmailMessageRead) => {
     setSelectedEmail(email);
     setMobileDetailOpen(true);
@@ -371,33 +392,67 @@ function EmailTab({ boards }: { boards: BoardRead[] }) {
             ) : (
               <div className="divide-y divide-slate-100">
                 {emails.map((email) => (
-                  <button
+                  <div
                     key={email.id}
-                    type="button"
-                    onClick={() => handleSelect(email)}
-                    className={`w-full cursor-pointer p-4 text-left transition-colors hover:bg-blue-50 ${
+                    className={`group relative ${
                       selectedEmail?.id === email.id
                         ? "border-l-4 border-blue-600 bg-blue-50"
                         : ""
                     }`}
                   >
-                    <div className="mb-1 flex items-start justify-between">
-                      <span className="flex-1 truncate text-sm font-semibold text-slate-900">
-                        {email.sender}
-                      </span>
-                      <span className="ml-2 shrink-0 text-[10px] font-medium uppercase text-slate-400">
-                        {formatDistanceToNow(new Date(email.received_at), {
-                          addSuffix: true,
-                        })}
-                      </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(email)}
+                      className="w-full cursor-pointer p-4 text-left transition-colors hover:bg-blue-50"
+                    >
+                      <div className="mb-1 flex items-start justify-between">
+                        <span className="flex-1 truncate text-sm font-semibold text-slate-900">
+                          {email.sender}
+                        </span>
+                        <span className="ml-2 shrink-0 text-[10px] font-medium uppercase text-slate-400">
+                          {formatDistanceToNow(new Date(email.received_at), {
+                            addSuffix: true,
+                          })}
+                        </span>
+                      </div>
+                      <div className="mb-1 truncate text-sm font-medium text-slate-800">
+                        {email.subject}
+                      </div>
+                      <div className="line-clamp-2 text-xs leading-relaxed text-slate-500">
+                        {email.snippet || "No preview available."}
+                      </div>
+                    </button>
+                    {/* Archive / delete actions — appear on hover */}
+                    <div className="absolute right-2 top-2 hidden gap-1 group-hover:flex">
+                      <button
+                        type="button"
+                        title="Archive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          archiveMutation.mutate({
+                            emailId: email.id,
+                            data: { status: "archived" },
+                          });
+                        }}
+                        disabled={archiveMutation.isPending}
+                        className="flex h-6 w-6 items-center justify-center rounded bg-white shadow-sm border border-slate-200 text-slate-400 hover:text-amber-600 hover:border-amber-200"
+                      >
+                        <Archive className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteMutation.mutate({ emailId: email.id });
+                        }}
+                        disabled={deleteMutation.isPending}
+                        className="flex h-6 w-6 items-center justify-center rounded bg-white shadow-sm border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     </div>
-                    <div className="mb-1 truncate text-sm font-medium text-slate-800">
-                      {email.subject}
-                    </div>
-                    <div className="line-clamp-2 text-xs leading-relaxed text-slate-500">
-                      {email.snippet || "No preview available."}
-                    </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -644,6 +699,13 @@ function AllTab({
       ? (emailsQuery.data.data.items ?? [])
       : [];
 
+  const archiveMutation = useUpdateEmailApiV1EmailsEmailIdPatch({
+    mutation: { onSuccess: () => emailsQuery.refetch() },
+  });
+  const deleteMutation = useDeleteEmailApiV1EmailsEmailIdDelete({
+    mutation: { onSuccess: () => emailsQuery.refetch() },
+  });
+
   const pendingApprovals = useMemo(
     () => approvals.filter((a) => a.status === "pending"),
     [approvals],
@@ -717,31 +779,61 @@ function AllTab({
       ))}
 
       {emails.map((email) => (
-        <button
+        <div
           key={email.id}
-          type="button"
-          onClick={() => {
-            setSelectedEmail(email);
-            setEmailDetailOpen(true);
-          }}
-          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-slate-50"
+          className="group relative flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors hover:bg-slate-50"
         >
-          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
-            Email
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-medium text-slate-900">
-              {email.subject}
-            </p>
-            <p className="text-xs text-slate-500">{email.sender}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedEmail(email);
+              setEmailDetailOpen(true);
+            }}
+            className="flex flex-1 min-w-0 items-center gap-3 text-left"
+          >
+            <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+              Email
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-sm font-medium text-slate-900">
+                {email.subject}
+              </p>
+              <p className="text-xs text-slate-500">{email.sender}</p>
+            </div>
+            <span className="shrink-0 text-xs text-slate-400">
+              {formatDistanceToNow(new Date(email.received_at), {
+                addSuffix: true,
+              })}
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:hidden" />
+          </button>
+          {/* Archive / delete — appear on hover */}
+          <div className="hidden shrink-0 gap-1 group-hover:flex">
+            <button
+              type="button"
+              title="Archive"
+              onClick={() =>
+                archiveMutation.mutate({
+                  emailId: email.id,
+                  data: { status: "archived" },
+                })
+              }
+              disabled={archiveMutation.isPending}
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:border-amber-200 hover:text-amber-600"
+            >
+              <Archive className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              title="Delete permanently"
+              onClick={() => deleteMutation.mutate({ emailId: email.id })}
+              disabled={deleteMutation.isPending}
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:border-rose-200 hover:text-rose-600"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
-          <span className="shrink-0 text-xs text-slate-400">
-            {formatDistanceToNow(new Date(email.received_at), {
-              addSuffix: true,
-            })}
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
-        </button>
+        </div>
       ))}
 
       <EmailDetailDialog

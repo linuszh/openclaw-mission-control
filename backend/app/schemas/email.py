@@ -51,6 +51,12 @@ class EmailConvertRequest(BaseModel):
     description: str | None = None
 
 
+class EmailUpdateRequest(BaseModel):
+    """Payload for updating an email message status."""
+
+    status: str
+
+
 class EmailSummarizeResponse(BaseModel):
     """Response for the AI summary dispatch endpoint."""
 

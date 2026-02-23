@@ -26,9 +26,10 @@ import type {
   EmailConvertRequest,
   EmailMessageRead,
   EmailSummarizeResponse,
+  EmailUpdateRequest,
   HTTPValidationError,
+  LimitOffsetPageTypeVarCustomizedEmailMessageRead,
   ListEmailsApiV1EmailsGetParams,
-  PageEmailMessageRead,
   TaskRead,
 } from ".././model";
 
@@ -458,11 +459,11 @@ export const useDeleteAccountApiV1EmailsAccountsAccountIdDelete = <
   );
 };
 /**
- * List all synced emails for the current organization.
+ * List all synced emails for the current organization (excludes archived).
  * @summary List Emails
  */
 export type listEmailsApiV1EmailsGetResponse200 = {
-  data: PageEmailMessageRead;
+  data: LimitOffsetPageTypeVarCustomizedEmailMessageRead;
   status: 200;
 };
 
@@ -665,6 +666,243 @@ export function useListEmailsApiV1EmailsGet<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
+/**
+ * Update an email message (e.g. archive it by setting status to 'archived').
+ * @summary Update Email
+ */
+export type updateEmailApiV1EmailsEmailIdPatchResponse200 = {
+  data: EmailMessageRead;
+  status: 200;
+};
+
+export type updateEmailApiV1EmailsEmailIdPatchResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type updateEmailApiV1EmailsEmailIdPatchResponseSuccess =
+  updateEmailApiV1EmailsEmailIdPatchResponse200 & {
+    headers: Headers;
+  };
+export type updateEmailApiV1EmailsEmailIdPatchResponseError =
+  updateEmailApiV1EmailsEmailIdPatchResponse422 & {
+    headers: Headers;
+  };
+
+export type updateEmailApiV1EmailsEmailIdPatchResponse =
+  | updateEmailApiV1EmailsEmailIdPatchResponseSuccess
+  | updateEmailApiV1EmailsEmailIdPatchResponseError;
+
+export const getUpdateEmailApiV1EmailsEmailIdPatchUrl = (emailId: string) => {
+  return `/api/v1/emails/${emailId}`;
+};
+
+export const updateEmailApiV1EmailsEmailIdPatch = async (
+  emailId: string,
+  emailUpdateRequest: EmailUpdateRequest,
+  options?: RequestInit,
+): Promise<updateEmailApiV1EmailsEmailIdPatchResponse> => {
+  return customFetch<updateEmailApiV1EmailsEmailIdPatchResponse>(
+    getUpdateEmailApiV1EmailsEmailIdPatchUrl(emailId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(emailUpdateRequest),
+    },
+  );
+};
+
+export const getUpdateEmailApiV1EmailsEmailIdPatchMutationOptions = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateEmailApiV1EmailsEmailIdPatch>>,
+    TError,
+    { emailId: string; data: EmailUpdateRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateEmailApiV1EmailsEmailIdPatch>>,
+  TError,
+  { emailId: string; data: EmailUpdateRequest },
+  TContext
+> => {
+  const mutationKey = ["updateEmailApiV1EmailsEmailIdPatch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateEmailApiV1EmailsEmailIdPatch>>,
+    { emailId: string; data: EmailUpdateRequest }
+  > = (props) => {
+    const { emailId, data } = props ?? {};
+
+    return updateEmailApiV1EmailsEmailIdPatch(emailId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateEmailApiV1EmailsEmailIdPatchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateEmailApiV1EmailsEmailIdPatch>>
+>;
+export type UpdateEmailApiV1EmailsEmailIdPatchMutationBody = EmailUpdateRequest;
+export type UpdateEmailApiV1EmailsEmailIdPatchMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Update Email
+ */
+export const useUpdateEmailApiV1EmailsEmailIdPatch = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateEmailApiV1EmailsEmailIdPatch>>,
+      TError,
+      { emailId: string; data: EmailUpdateRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateEmailApiV1EmailsEmailIdPatch>>,
+  TError,
+  { emailId: string; data: EmailUpdateRequest },
+  TContext
+> => {
+  return useMutation(
+    getUpdateEmailApiV1EmailsEmailIdPatchMutationOptions(options),
+    queryClient,
+  );
+};
+/**
+ * Permanently delete a single email message.
+ * @summary Delete Email
+ */
+export type deleteEmailApiV1EmailsEmailIdDeleteResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteEmailApiV1EmailsEmailIdDeleteResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type deleteEmailApiV1EmailsEmailIdDeleteResponseSuccess =
+  deleteEmailApiV1EmailsEmailIdDeleteResponse204 & {
+    headers: Headers;
+  };
+export type deleteEmailApiV1EmailsEmailIdDeleteResponseError =
+  deleteEmailApiV1EmailsEmailIdDeleteResponse422 & {
+    headers: Headers;
+  };
+
+export type deleteEmailApiV1EmailsEmailIdDeleteResponse =
+  | deleteEmailApiV1EmailsEmailIdDeleteResponseSuccess
+  | deleteEmailApiV1EmailsEmailIdDeleteResponseError;
+
+export const getDeleteEmailApiV1EmailsEmailIdDeleteUrl = (emailId: string) => {
+  return `/api/v1/emails/${emailId}`;
+};
+
+export const deleteEmailApiV1EmailsEmailIdDelete = async (
+  emailId: string,
+  options?: RequestInit,
+): Promise<deleteEmailApiV1EmailsEmailIdDeleteResponse> => {
+  return customFetch<deleteEmailApiV1EmailsEmailIdDeleteResponse>(
+    getDeleteEmailApiV1EmailsEmailIdDeleteUrl(emailId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeleteEmailApiV1EmailsEmailIdDeleteMutationOptions = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteEmailApiV1EmailsEmailIdDelete>>,
+    TError,
+    { emailId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteEmailApiV1EmailsEmailIdDelete>>,
+  TError,
+  { emailId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteEmailApiV1EmailsEmailIdDelete"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteEmailApiV1EmailsEmailIdDelete>>,
+    { emailId: string }
+  > = (props) => {
+    const { emailId } = props ?? {};
+
+    return deleteEmailApiV1EmailsEmailIdDelete(emailId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteEmailApiV1EmailsEmailIdDeleteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteEmailApiV1EmailsEmailIdDelete>>
+>;
+
+export type DeleteEmailApiV1EmailsEmailIdDeleteMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Delete Email
+ */
+export const useDeleteEmailApiV1EmailsEmailIdDelete = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof deleteEmailApiV1EmailsEmailIdDelete>>,
+      TError,
+      { emailId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof deleteEmailApiV1EmailsEmailIdDelete>>,
+  TError,
+  { emailId: string },
+  TContext
+> => {
+  return useMutation(
+    getDeleteEmailApiV1EmailsEmailIdDeleteMutationOptions(options),
+    queryClient,
+  );
+};
 /**
  * Retrieve a specific email message by ID.
  * @summary Get Email

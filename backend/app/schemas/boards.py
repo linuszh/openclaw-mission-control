@@ -35,6 +35,10 @@ class BoardBase(SQLModel):
     only_lead_can_change_status: bool = False
     max_agents: int = Field(default=1, ge=0)
     default_model: str | None = None
+    # Product Architecture & Project Context
+    project_context: str | None = None
+    claude_context: str | None = None
+    gemini_context: str | None = None
 
 
 class BoardCreate(BoardBase):
@@ -80,6 +84,9 @@ class BoardUpdate(SQLModel):
     only_lead_can_change_status: bool | None = None
     max_agents: int | None = Field(default=None, ge=0)
     default_model: str | None = None
+    project_context: str | None = None
+    claude_context: str | None = None
+    gemini_context: str | None = None
 
     @model_validator(mode="after")
     def validate_gateway_id(self) -> Self:

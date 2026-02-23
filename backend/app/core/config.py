@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     # OpenClaw gateway runtime compatibility
     gateway_min_version: str = "2026.02.9"
 
+    # Telegram Integration
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "text"

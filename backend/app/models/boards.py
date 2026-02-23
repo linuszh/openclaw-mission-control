@@ -45,5 +45,9 @@ class Board(TenantScoped, table=True):
     only_lead_can_change_status: bool = Field(default=False)
     max_agents: int = Field(default=1)
     default_model: str | None = None
+    # Product Architecture & Project Context
+    project_context: str | None = Field(default=None)
+    claude_context: str | None = Field(default=None)
+    gemini_context: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)

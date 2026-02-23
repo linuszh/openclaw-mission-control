@@ -307,6 +307,7 @@ export default function EditBoardPage() {
   const [projectContext, setProjectContext] = useState<string | undefined>(undefined);
   const [claudeContext, setClaudeContext] = useState<string | undefined>(undefined);
   const [geminiContext, setGeminiContext] = useState<string | undefined>(undefined);
+  const [notificationChannel, setNotificationChannel] = useState<string | undefined>(undefined);
 
   const [error, setError] = useState<string | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
@@ -525,6 +526,7 @@ export default function EditBoardPage() {
   const resolvedProjectContext = projectContext ?? baseBoard?.project_context ?? "";
   const resolvedClaudeContext = claudeContext ?? baseBoard?.claude_context ?? "";
   const resolvedGeminiContext = geminiContext ?? baseBoard?.gemini_context ?? "";
+  const resolvedNotificationChannel = notificationChannel ?? baseBoard?.notification_channel ?? "";
 
   const displayGatewayId = resolvedGatewayId || gateways[0]?.id || "";
   const isWebhookCreating = createWebhookMutation.isPending;
@@ -675,6 +677,7 @@ export default function EditBoardPage() {
       project_context: resolvedProjectContext || null,
       claude_context: resolvedClaudeContext || null,
       gemini_context: resolvedGeminiContext || null,
+      notification_channel: resolvedNotificationChannel || null,
     };
 
     updateBoardMutation.mutate({ boardId, data: payload });
@@ -1146,6 +1149,27 @@ export default function EditBoardPage() {
                     Restrict status changes to the board lead.
                   </span>
                 </span>
+              </div>
+
+              {/* Notifications */}
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-700">
+                  Notifications
+                </label>
+                <select
+                  value={resolvedNotificationChannel}
+                  onChange={(e) => setNotificationChannel(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <option value="">None</option>
+                  <option value="telegram">Telegram</option>
+                  <option value="discord">Discord</option>
+                  <option value="both">Telegram + Discord</option>
+                </select>
+                <p className="text-xs text-slate-400">
+                  Receive approval requests and done/blocked task alerts via Telegram or Discord.
+                </p>
               </div>
             </section>
 

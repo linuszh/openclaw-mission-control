@@ -28,6 +28,7 @@ export interface BoardCreate {
   /** @minimum 0 */
   max_agents?: number;
   default_model?: string | null;
+  notification_channel?: string | null;
   project_context?: string | null;
   claude_context?: string | null;
   gemini_context?: string | null;

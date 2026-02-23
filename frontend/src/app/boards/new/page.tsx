@@ -168,6 +168,7 @@ function ConfigureForm({
   const [defaultModel, setDefaultModel] = useState<string>(
     leadModel !== "" ? leadModel : NO_MODEL_VALUE,
   );
+  const [notificationChannel, setNotificationChannel] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const gatewaysQuery = useListGatewaysApiV1GatewaysGet<
@@ -299,6 +300,7 @@ function ConfigureForm({
         gateway_id: resolvedGatewayId,
         board_group_id: boardGroupId === "none" ? null : boardGroupId,
         default_model: defaultModel === NO_MODEL_VALUE ? null : defaultModel || null,
+        notification_channel: notificationChannel || undefined,
       },
     });
   };
@@ -415,6 +417,26 @@ function ConfigureForm({
               className="min-h-[120px]"
               disabled={isLoading}
             />
+          </div>
+
+          {/* Notifications */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-700">
+              Notifications
+            </label>
+            <select
+              value={notificationChannel}
+              onChange={(e) => setNotificationChannel(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">None</option>
+              <option value="telegram">Telegram</option>
+              <option value="discord">Discord</option>
+              <option value="both">Telegram + Discord</option>
+            </select>
+            <p className="text-xs text-slate-400">
+              Receive approval requests and done/blocked task alerts via Telegram or Discord.
+            </p>
           </div>
         </div>
 

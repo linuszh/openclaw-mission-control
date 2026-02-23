@@ -27,6 +27,7 @@ dependencies = [
     "websockets==16.0",
     "redis==6.3.0",
     "rq==2.6.0",
+    "cryptography==45.0.7",
 ]
 
 [project.optional-dependencies]

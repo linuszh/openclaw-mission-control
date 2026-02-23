@@ -1021,7 +1021,12 @@ def _control_plane_for_gateway(gateway: Gateway) -> OpenClawGatewayControlPlane:
         msg = "Gateway url is required"
         raise OpenClawGatewayError(msg)
     return OpenClawGatewayControlPlane(
-        GatewayClientConfig(url=gateway.url, token=gateway.token),
+        GatewayClientConfig(
+            url=gateway.url,
+            token=gateway.token,
+            allow_insecure_tls=gateway.allow_insecure_tls,
+            disable_device_pairing=gateway.disable_device_pairing,
+        ),
     )
 
 
@@ -1150,7 +1155,12 @@ class OpenClawGatewayProvisioner:
         if not wake:
             return
 
-        client_config = GatewayClientConfig(url=gateway.url, token=gateway.token)
+        client_config = GatewayClientConfig(
+            url=gateway.url,
+            token=gateway.token,
+            allow_insecure_tls=gateway.allow_insecure_tls,
+            disable_device_pairing=gateway.disable_device_pairing,
+        )
         await ensure_session(session_key, config=client_config, label=agent.name)
         verb = wakeup_verb or ("provisioned" if action == "provision" else "updated")
         await send_message(

@@ -54,13 +54,16 @@ def _smtp_send(account: EmailAccount, to: str, subject: str, body: str) -> None:
     smtp_port = account.smtp_port or 587
     use_ssl = account.smtp_use_ssl
 
-    if use_ssl and smtp_port == 465:
+    # Port 465 = implicit TLS (SMTP_SSL), port 587 = explicit TLS (STARTTLS)
+    if smtp_port == 465:
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(account.imap_username, account.imap_password)
             server.sendmail(account.email_address, to, msg.as_string())
     else:
+        # Default: SMTP with STARTTLS (works for port 587 and others)
         with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
+            if use_ssl:
+                server.starttls()
             server.login(account.imap_username, account.imap_password)
             server.sendmail(account.email_address, to, msg.as_string())
 
@@ -109,6 +112,17 @@ async def delete_account(
 
     await session.delete(account)
     await session.commit()
+
+
+@router.get("/accounts", response_model=list[EmailAccountRead])
+async def list_accounts(
+    ctx: OrganizationContext = ORG_MEMBER_DEP,
+    session: AsyncSession = SESSION_DEP,
+) -> list[EmailAccount]:
+    """List all email sync accounts for the current organization."""
+    statement = select(EmailAccount).where(EmailAccount.organization_id == ctx.organization.id)
+    result = await session.exec(statement)
+    return list(result.all())
 
 
 @router.get("/", response_model=DefaultLimitOffsetPage[EmailMessageRead])
@@ -163,9 +177,16 @@ async def send_email(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No email account configured for this organization.",
         )
-    await asyncio.to_thread(
-        _smtp_send, account, payload.to, payload.subject, payload.body
-    )
+    try:
+        await asyncio.to_thread(
+            _smtp_send, account, payload.to, payload.subject, payload.body
+        )
+    except Exception as exc:
+        logger.warning("email.send.smtp_failed to=%s error=%s", payload.to, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to send email: {exc}",
+        )
     sent_msg = EmailMessage(
         organization_id=ctx.organization.id,
         email_account_id=account.id,
@@ -226,17 +247,6 @@ async def delete_email(
     email_msg.status = "deleted"
     session.add(email_msg)
     await session.commit()
-
-
-@router.get("/accounts", response_model=list[EmailAccountRead])
-async def list_accounts(
-    ctx: OrganizationContext = ORG_MEMBER_DEP,
-    session: AsyncSession = SESSION_DEP,
-) -> list[EmailAccount]:
-    """List all email sync accounts for the current organization."""
-    statement = select(EmailAccount).where(EmailAccount.organization_id == ctx.organization.id)
-    result = await session.exec(statement)
-    return list(result.all())
 
 
 @router.get("/{email_id}", response_model=EmailMessageRead)

@@ -3,16 +3,26 @@
 import Link from "next/link";
 import { Sparkles, Inbox, MessageSquare, ClipboardList, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardPageLayout } from "@/components/templates/DashboardPageLayout";
 
 export default function AssistantHubPage() {
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center gap-3 mb-8">
-        <Sparkles className="h-8 w-8 text-blue-600" />
-        <h1 className="text-3xl font-bold tracking-tight">Personal Assistant</h1>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <DashboardPageLayout
+      signedOut={{
+        message: "Sign in to access your Personal Assistant.",
+        forceRedirectUrl: "/assistant",
+        signUpForceRedirectUrl: "/assistant",
+      }}
+      title={
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-6 w-6 text-blue-600" />
+          <span>Personal Assistant</span>
+        </div>
+      }
+      description="Unify your communications and task triage."
+    >
+      <div className="container mx-auto py-2 px-0">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Link href="/assistant/inbox">
           <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full border-2 border-transparent hover:border-blue-200">
             <CardHeader>
@@ -79,6 +89,7 @@ export default function AssistantHubPage() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </DashboardPageLayout>
   );
 }

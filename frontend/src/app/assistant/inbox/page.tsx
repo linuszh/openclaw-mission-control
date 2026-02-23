@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DashboardPageLayout } from "@/components/templates/DashboardPageLayout";
 
 export default function EmailTriagePage() {
   const [selectedEmail, setSelectedEmail] = useState<EmailMessageRead | null>(null);
@@ -22,7 +23,22 @@ export default function EmailTriagePage() {
   const isLoading = emailsQuery.isLoading;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-slate-50 overflow-hidden">
+    <DashboardPageLayout
+      signedOut={{
+        message: "Sign in to access your Inbox.",
+        forceRedirectUrl: "/assistant/inbox",
+        signUpForceRedirectUrl: "/assistant/inbox",
+      }}
+      title={
+        <div className="flex items-center gap-2">
+          <Inbox className="h-6 w-6 text-blue-600" />
+          <span>Email Triage</span>
+        </div>
+      }
+      description="Process and convert emails into actionable tasks."
+      contentClassName="p-0 h-[calc(100vh-140px)]"
+    >
+      <div className="flex h-full bg-slate-50 overflow-hidden rounded-xl border border-slate-200 shadow-sm mx-8 mb-8 mt-4">
       {/* Sidebar List */}
       <div className="w-1/3 border-r border-slate-200 bg-white flex flex-col h-full overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0">
@@ -123,6 +139,7 @@ export default function EmailTriagePage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </DashboardPageLayout>
   );
 }

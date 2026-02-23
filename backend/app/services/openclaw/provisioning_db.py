@@ -42,6 +42,7 @@ from app.schemas.agents import (
     AgentHeartbeat,
     AgentHeartbeatCreate,
     AgentRead,
+    AgentSyncResponse,
     AgentUpdate,
 )
 from app.schemas.common import OkResponse
@@ -79,6 +80,7 @@ from app.services.openclaw.policies import OpenClawAuthorizationPolicy
 from app.services.openclaw.provisioning import (
     OpenClawGatewayControlPlane,
     OpenClawGatewayProvisioner,
+    get_agent_gateway_config,
 )
 from app.services.openclaw.shared import GatewayAgentIdentity
 from app.services.organizations import (
@@ -1636,6 +1638,71 @@ class AgentLifecycleService(OpenClawDBService):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         await self.require_agent_access(agent=agent, ctx=ctx, write=False)
         return self.to_agent_read(self.with_computed_status(agent))
+
+    async def sync_agent_from_gateway(
+        self,
+        *,
+        agent_id: str,
+        ctx: OrganizationContext,
+    ) -> AgentSyncResponse:
+        agent = await Agent.objects.by_id(agent_id).first(self.session)
+        if agent is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
+        await self.require_agent_access(agent=agent, ctx=ctx, write=True)
+
+        client_config: GatewayClientConfig | None = None
+        if agent.board_id is not None:
+            board = await self.require_board(str(agent.board_id))
+            _gw, client_config = await self.require_gateway(board)
+        else:
+            _gw_or_none = await Gateway.objects.by_id(agent.gateway_id).first(self.session)
+            if _gw_or_none is not None:
+                client_config = optional_gateway_client_config(_gw_or_none)
+
+        if client_config is None:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Gateway not reachable",
+            )
+
+        agent_key = _agent_key(agent)
+        try:
+            entry = await get_agent_gateway_config(agent_key, config=client_config)
+        except OpenClawGatewayError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Gateway error: {exc}",
+            ) from exc
+
+        if entry is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Agent not found in gateway config",
+            )
+
+        synced: list[str] = []
+        profile: dict[str, Any] = dict(agent.identity_profile or {})
+
+        new_model = entry.get("model")
+        if isinstance(new_model, str) and new_model:
+            if profile.get("model") != new_model:
+                profile["model"] = new_model
+                synced.append("model")
+
+        if synced:
+            agent.identity_profile = profile
+            agent.updated_at = utcnow()
+            self.session.add(agent)
+            await self.session.commit()
+            await self.session.refresh(agent)
+
+        identity_profile: dict[str, Any] = agent.identity_profile or {}
+        return AgentSyncResponse(
+            id=agent.id,
+            name=agent.name,
+            model=identity_profile.get("model"),
+            synced_fields=synced,
+        )
 
     async def update_agent(
         self,

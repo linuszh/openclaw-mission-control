@@ -682,6 +682,22 @@ async def _gateway_config_agent_list(
     return cfg.get("hash"), agents_list, data
 
 
+async def get_agent_gateway_config(
+    agent_id: str,
+    *,
+    config: "GatewayClientConfig",
+) -> "dict[str, Any] | None":
+    """Return the gateway config entry for agent_id, or None if not found."""
+    _, agents_list, _ = await _gateway_config_agent_list(config)
+    for entry in agents_list:
+        if not isinstance(entry, dict):
+            continue
+        gw_id = entry.get("agentId") or entry.get("id")
+        if gw_id == agent_id:
+            return entry
+    return None
+
+
 def _heartbeat_entry_map(
     entries: list[tuple[str, str, dict[str, Any]]],
 ) -> dict[str, tuple[str, dict[str, Any]]]:
@@ -1174,6 +1190,53 @@ class OpenClawGatewayProvisioner:
             deliver=deliver_wakeup,
         )
 
+    async def _verify_agent_identity(
+        self,
+        agent_gateway_id: str,
+        expected_workspace: str,
+        config: "GatewayClientConfig",
+        logger: "Any",
+    ) -> bool:
+        """
+        Confirm gateway agent identity matches before deletion.
+        Returns True if safe to delete, False if identity unconfirmed (skip gateway delete).
+        A 404 (already absent) is treated as True — nothing to delete.
+        """
+        try:
+            entry = await get_agent_gateway_config(agent_gateway_id, config=config)
+        except OpenClawGatewayError as exc:
+            logger.warning(
+                "gateway.delete.verify_failed agent_id=%s error=%s",
+                agent_gateway_id,
+                exc,
+            )
+            return False
+
+        if entry is None:
+            # Already gone from gateway
+            logger.info("gateway.delete.already_absent agent_id=%s", agent_gateway_id)
+            return True
+
+        gw_workspace = (entry.get("workspace") or "").rstrip("/")
+        exp_workspace = (expected_workspace or "").rstrip("/")
+
+        if not gw_workspace:
+            logger.warning(
+                "gateway.delete.verify_no_workspace agent_id=%s", agent_gateway_id
+            )
+            return False
+
+        if gw_workspace != exp_workspace:
+            logger.warning(
+                "gateway.delete.identity_mismatch agent_id=%s expected=%s got=%s",
+                agent_gateway_id,
+                exp_workspace,
+                gw_workspace,
+            )
+            return False
+
+        return True
+
     async def delete_agent_lifecycle(
         self,
         *,
@@ -1198,11 +1261,36 @@ class OpenClawGatewayProvisioner:
             agent_gateway_id = GatewayAgentIdentity.openclaw_agent_id(gateway)
         else:
             agent_gateway_id = _agent_key(agent)
-        try:
-            await control_plane.delete_agent(agent_gateway_id, delete_files=delete_files)
-        except OpenClawGatewayError as exc:
-            if not _is_missing_agent_error(exc):
-                raise
+
+        import logging as _logging
+
+        _del_logger = _logging.getLogger(__name__)
+        _gw_config = getattr(control_plane, "_config", None)
+        if _gw_config is not None:
+            _safe = await self._verify_agent_identity(
+                agent_gateway_id,
+                workspace_path or "",
+                _gw_config,
+                _del_logger,
+            )
+        else:
+            _safe = False
+            _del_logger.warning(
+                "gateway.delete.skipped agent_id=%s reason=no_config", agent_gateway_id
+            )
+
+        if _safe:
+            try:
+                await control_plane.delete_agent(agent_gateway_id, delete_files=delete_files)
+            except OpenClawGatewayError as exc:
+                if not _is_missing_agent_error(exc):
+                    raise
+        else:
+            _del_logger.warning(
+                "gateway.delete.skipped agent_id=%s reason=identity_unconfirmed workspace=%s",
+                agent_gateway_id,
+                workspace_path,
+            )
 
         if delete_session:
             if agent.board_id is None:

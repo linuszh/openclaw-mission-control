@@ -296,6 +296,21 @@ class AgentHeartbeatCreate(AgentHeartbeat):
     )
 
 
+class AgentSyncResponse(SQLModel):
+    """Result of syncing an agent's config from the gateway."""
+
+    model_config = SQLModelConfig(
+        json_schema_extra={
+            "description": "Fields pulled live from the OpenClaw gateway.",
+        }
+    )
+
+    id: UUID
+    name: str
+    model: str | None = None
+    synced_fields: list[str] = Field(default_factory=list)
+
+
 class AgentNudge(SQLModel):
     """Nudge message payload for pinging an agent."""
 

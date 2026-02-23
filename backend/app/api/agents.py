@@ -17,6 +17,7 @@ from app.schemas.agents import (
     AgentHeartbeat,
     AgentHeartbeatCreate,
     AgentRead,
+    AgentSyncResponse,
     AgentUpdate,
 )
 from app.schemas.common import OkResponse
@@ -112,6 +113,17 @@ async def get_agent(
     """Get a single agent by id."""
     service = AgentLifecycleService(session)
     return await service.get_agent(agent_id=agent_id, ctx=ctx)
+
+
+@router.post("/{agent_id}/sync-from-gateway", response_model=AgentSyncResponse)
+async def sync_agent_from_gateway(
+    agent_id: str,
+    session: AsyncSession = SESSION_DEP,
+    ctx: OrganizationContext = ORG_ADMIN_DEP,
+) -> AgentSyncResponse:
+    """Pull live model/config from the OpenClaw gateway and update this agent's MC record."""
+    service = AgentLifecycleService(session)
+    return await service.sync_agent_from_gateway(agent_id=agent_id, ctx=ctx)
 
 
 @router.patch("/{agent_id}", response_model=AgentRead)

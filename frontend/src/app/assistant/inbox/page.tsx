@@ -1,6 +1,6 @@
 "use client";
 
-import { useListEmailsEmailsGet } from "@/api/generated/emails/emails";
+import { useListEmailsApiV1EmailsGet } from "@/api/generated/emails/emails";
 import { EmailMessageRead } from "@/api/generated/model/emailMessageRead";
 import { Inbox, Mail, User, Clock, ChevronRight, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 
 export default function EmailTriagePage() {
   const [selectedEmail, setSelectedEmail] = useState<EmailMessageRead | null>(null);
-  const emailsQuery = useListEmailsEmailsGet({
+  const emailsQuery = useListEmailsApiV1EmailsGet({}, {
     query: {
       refetchInterval: 60_000,
     }
   });
 
-  const emails = emailsQuery.data?.data?.items || [];
+  const emails = emailsQuery.data?.status === 200 ? emailsQuery.data.data.items || [] : [];
   const isLoading = emailsQuery.isLoading;
 
   return (

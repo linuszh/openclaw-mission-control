@@ -5,9 +5,10 @@ import { Mail, Plus, Trash2, Server, User, Lock, Check, AlertCircle } from "luci
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useListAccountsEmailsAccountsGet, useCreateAccountEmailsAccountsPost, useDeleteAccountEmailsAccountsAccountIdDelete } from "@/api/generated/emails/emails";
+import { useListAccountsApiV1EmailsAccountsGet, useCreateAccountApiV1EmailsAccountsPost, useDeleteAccountApiV1EmailsAccountsAccountIdDelete } from "@/api/generated/emails/emails";
+import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
-import { getListAccountsEmailsAccountsGetQueryKey } from "@/api/generated/emails/emails";
+import { getListAccountsApiV1EmailsAccountsGetQueryKey } from "@/api/generated/emails/emails";
 
 export function EmailAccountsSettings() {
   const queryClient = useQueryClient();
@@ -21,12 +22,12 @@ export function EmailAccountsSettings() {
     use_ssl: true,
   });
 
-  const accountsQuery = useListAccountsEmailsAccountsGet();
-  const createMutation = useCreateAccountEmailsAccountsPost({
+  const accountsQuery = useListAccountsApiV1EmailsAccountsGet();
+  const createMutation = useCreateAccountApiV1EmailsAccountsPost({
     mutation: {
       onSuccess: () => {
         setIsAdding(false);
-        queryClient.invalidateQueries({ queryKey: getListAccountsEmailsAccountsGetQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListAccountsApiV1EmailsAccountsGetQueryKey() });
         setFormData({
           email_address: "",
           imap_server: "",
@@ -39,10 +40,10 @@ export function EmailAccountsSettings() {
     }
   });
 
-  const deleteMutation = useDeleteAccountEmailsAccountsAccountIdDelete({
+  const deleteMutation = useDeleteAccountApiV1EmailsAccountsAccountIdDelete({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListAccountsEmailsAccountsGetQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListAccountsApiV1EmailsAccountsGetQueryKey() });
       }
     }
   });
@@ -175,8 +176,8 @@ export function EmailAccountsSettings() {
               </div>
               <Button 
                 variant="ghost" 
-                size="icon" 
-                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                size="sm" 
+                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2"
                 onClick={() => {
                   if (confirm("Delete this email account? This will also remove all synced messages.")) {
                     deleteMutation.mutate({ accountId: account.id });

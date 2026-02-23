@@ -102,6 +102,7 @@ Copy from `.env.example` (root) and `backend/.env.example`. Critical ones:
 
 ## Repository Rules
 - **Never open a pull request** against the upstream repository (`abhi1693/openclaw-mission-control`). Push to the fork (`linuszh/openclaw-mission-control`) only.
+- **Always push to the `fork` remote**: `git push fork master`. The `origin` remote points to the upstream and will be rejected.
 
 ## Coding Conventions
 - **Python**: Black + isort + flake8. Max line length 100. `snake_case` throughout. Strict mypy.

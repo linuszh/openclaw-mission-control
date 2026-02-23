@@ -1892,19 +1892,17 @@ class AgentLifecycleService(OpenClawDBService):
                         gateway=gateway,
                     )
                 except OpenClawGatewayError as exc:
-                    self.record_instruction_failure(self.session, agent, str(exc), "delete")
-                    await self.session.commit()
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail=f"Gateway cleanup failed: {exc}",
-                    ) from exc
+                    self.logger.warning(
+                        "gateway.delete.rpc_failed agent_id=%s error=%s — continuing with DB delete",
+                        agent.id,
+                        exc,
+                    )
                 except (OSError, RuntimeError, ValueError) as exc:  # pragma: no cover
-                    self.record_instruction_failure(self.session, agent, str(exc), "delete")
-                    await self.session.commit()
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Workspace cleanup failed: {exc}",
-                    ) from exc
+                    self.logger.warning(
+                        "gateway.delete.workspace_failed agent_id=%s error=%s — continuing with DB delete",
+                        agent.id,
+                        exc,
+                    )
         else:
             board = await self.require_board(str(agent.board_id))
             gateway, client_config = await self.require_gateway(board)
@@ -1914,19 +1912,17 @@ class AgentLifecycleService(OpenClawDBService):
                     gateway=gateway,
                 )
             except OpenClawGatewayError as exc:
-                self.record_instruction_failure(self.session, agent, str(exc), "delete")
-                await self.session.commit()
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Gateway cleanup failed: {exc}",
-                ) from exc
+                self.logger.warning(
+                    "gateway.delete.rpc_failed agent_id=%s error=%s — continuing with DB delete",
+                    agent.id,
+                    exc,
+                )
             except (OSError, RuntimeError, ValueError) as exc:  # pragma: no cover
-                self.record_instruction_failure(self.session, agent, str(exc), "delete")
-                await self.session.commit()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Workspace cleanup failed: {exc}",
-                ) from exc
+                self.logger.warning(
+                    "gateway.delete.workspace_failed agent_id=%s error=%s — continuing with DB delete",
+                    agent.id,
+                    exc,
+                )
 
         record_activity(
             self.session,

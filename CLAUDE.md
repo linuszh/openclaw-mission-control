@@ -100,6 +100,9 @@ Copy from `.env.example` (root) and `backend/.env.example`. Critical ones:
 - `RQ_REDIS_URL` — Redis for background job queue
 - `GATEWAY_MIN_VERSION` — minimum compatible OpenClaw gateway version
 
+## Repository Rules
+- **Never open a pull request** against the upstream repository (`abhi1693/openclaw-mission-control`). Push to the fork (`linuszh/openclaw-mission-control`) only.
+
 ## Coding Conventions
 - **Python**: Black + isort + flake8. Max line length 100. `snake_case` throughout. Strict mypy.
 - **TypeScript/React**: ESLint + Prettier. `PascalCase` components, `camelCase` functions/variables. Prefix intentionally unused destructured variables with `_`.

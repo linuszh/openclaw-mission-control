@@ -53,6 +53,10 @@ OpenClaw Mission Control is a centralized operations and governance platform for
 - **Frontend Tests:** `make frontend-test` (Vitest).
 - **E2E Tests:** `cd frontend && npm run e2e` (Cypress).
 
+## Repository Rules
+
+- **Never open a pull request** against the upstream repository (`abhi1693/openclaw-mission-control`). Push to the fork (`linuszh/openclaw-mission-control`) only.
+
 ## Development Conventions
 
 - **Python Styling:** Follows Black, isort, and flake8 standards. Uses strict MyPy for typechecking. Max line length is 100.

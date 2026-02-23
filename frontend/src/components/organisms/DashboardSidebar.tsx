@@ -4,14 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
-  BarChart3,
+  Diamond,
   Inbox,
   LayoutGrid,
   Settings,
+  BarChart3,
 } from "lucide-react";
 
 import { ApiError } from "@/api/mutator";
-import { useAuth } from "@/auth/clerk";
+import { useAuth, useUser } from "@/auth/clerk";
+import { isLocalAuthMode } from "@/auth/localAuth";
 import {
   type healthzHealthzGetResponse,
   useHealthzHealthzGet,
@@ -22,6 +24,8 @@ import { useInboxCount } from "@/lib/use-inbox-count";
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
+  const localMode = isLocalAuthMode();
   const inboxCount = useInboxCount(isSignedIn);
 
   const healthQuery = useHealthzHealthzGet<healthzHealthzGetResponse, ApiError>(
@@ -46,10 +50,14 @@ export function DashboardSidebar() {
           : "unknown";
   const statusLabel =
     systemStatus === "operational"
-      ? "All systems operational"
+      ? "sys: OK"
       : systemStatus === "unknown"
-        ? "Status unavailable"
-        : "System degraded";
+        ? "sys: …"
+        : "sys: ERR";
+
+  const avatarLabel = localMode
+    ? "L"
+    : (user?.id?.slice(0, 1).toUpperCase() ?? "U");
 
   const navItems = [
     { href: "/home", label: "Home", icon: BarChart3, match: "/home" },
@@ -67,51 +75,47 @@ export function DashboardSidebar() {
         borderColor: "var(--sidebar-border)",
       }}
     >
-      <div className="flex-1 px-3 py-5">
-        <nav className="space-y-1">
+      {/* Logo lockup */}
+      <div className="flex items-center px-4 py-5">
+        <Diamond className="h-5 w-5 shrink-0 text-blue-500" />
+        <span className="ml-2 text-sm font-semibold tracking-tight text-[color:var(--sidebar-text-active)]">
+          OpenClaw
+        </span>
+      </div>
+
+      <div className="flex-1 px-3">
+        <nav className="space-y-0.5">
           {navItems.map((item) => {
             const isActive =
               item.match === "/home"
                 ? pathname === "/home" || pathname === "/"
                 : pathname.startsWith(item.match);
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "text-[color:var(--sidebar-text-active)]"
-                    : "text-[color:var(--sidebar-text)] hover:text-[color:var(--sidebar-text-active)]",
+              <div key={item.href} className="relative">
+                {isActive && (
+                  <span className="pointer-events-none absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-blue-500" />
                 )}
-                style={{
-                  background: isActive
-                    ? "var(--sidebar-active-bg)"
-                    : undefined,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.background =
-                      "var(--sidebar-hover-bg)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.background = "";
-                  }
-                }}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {"count" in item && item.count > 0 ? (
-                  <span
-                    className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white"
-                    style={{ background: "var(--sidebar-badge-bg)" }}
-                  >
-                    {item.count > 99 ? "99+" : item.count}
-                  </span>
-                ) : null}
-              </Link>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-[color:var(--sidebar-active-bg)] text-[color:var(--sidebar-text-active)]"
+                      : "text-[color:var(--sidebar-text)] hover:bg-[color:var(--sidebar-hover-bg)] hover:text-[color:var(--sidebar-text-active)]",
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{item.label}</span>
+                  {"count" in item && item.count > 0 ? (
+                    <span
+                      className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white"
+                      style={{ background: "var(--sidebar-badge-bg)" }}
+                    >
+                      {item.count > 99 ? "99+" : item.count}
+                    </span>
+                  ) : null}
+                </Link>
+              </div>
             );
           })}
         </nav>
@@ -127,13 +131,16 @@ export function DashboardSidebar() {
         >
           <span
             className={cn(
-              "h-2 w-2 rounded-full shrink-0",
+              "h-2 w-2 shrink-0 rounded-full",
               systemStatus === "operational" && "bg-emerald-500",
               systemStatus === "degraded" && "bg-rose-500",
               systemStatus === "unknown" && "bg-slate-500",
             )}
           />
-          {statusLabel}
+          <span className="flex-1 truncate">{statusLabel}</span>
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-600 text-[10px] font-bold text-white">
+            {avatarLabel}
+          </span>
         </div>
       </div>
     </aside>

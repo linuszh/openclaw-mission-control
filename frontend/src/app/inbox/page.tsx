@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import {
   CheckCircle2,
+  ChevronRight,
   Clock,
   Loader2,
   Mail,
@@ -358,10 +359,13 @@ function EmailTab({ boards }: { boards: BoardRead[] }) {
                 ))}
               </div>
             ) : emails.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center p-8 text-center text-slate-400">
-                <Mail className="mb-3 h-10 w-10 opacity-20" />
-                <p className="text-sm">
-                  No messages. Ensure your IMAP account is connected.
+              <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                  <Mail className="h-6 w-6 text-slate-400" />
+                </div>
+                <p className="text-sm font-semibold text-slate-600">No messages yet</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Ensure your IMAP account is connected in Settings.
                 </p>
               </div>
             ) : (
@@ -563,9 +567,9 @@ function InboxInner() {
 
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="approvals" className="gap-1.5">
+          <TabsList className="mb-4 h-9 rounded-full bg-slate-100 p-1">
+            <TabsTrigger value="all" className="rounded-full px-4 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">All</TabsTrigger>
+            <TabsTrigger value="approvals" className="gap-1.5 rounded-full px-4 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
               Approvals
               {pendingApprovals.length > 0 ? (
                 <span className="flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white">
@@ -573,7 +577,7 @@ function InboxInner() {
                 </span>
               ) : null}
             </TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
+            <TabsTrigger value="email" className="rounded-full px-4 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Email</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
@@ -657,11 +661,13 @@ function AllTab({
 
   if (pendingApprovals.length === 0 && emails.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-16 text-center">
-        <CheckCircle2 className="mb-3 h-10 w-10 text-emerald-400" />
-        <p className="text-sm font-medium text-slate-700">All caught up!</p>
-        <p className="mt-1 text-xs text-slate-400">
-          No pending approvals or emails.
+      <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-20 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
+          <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+        </div>
+        <p className="text-base font-semibold text-slate-800">All caught up</p>
+        <p className="mt-1.5 text-sm text-slate-400 max-w-xs">
+          No pending approvals or unread emails right now.
         </p>
       </div>
     );
@@ -718,7 +724,7 @@ function AllTab({
             setSelectedEmail(email);
             setEmailDetailOpen(true);
           }}
-          className="flex w-full flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-slate-50"
+          className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-slate-50"
         >
           <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
             Email
@@ -734,6 +740,7 @@ function AllTab({
               addSuffix: true,
             })}
           </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
         </button>
       ))}
 

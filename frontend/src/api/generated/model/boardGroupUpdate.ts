@@ -12,4 +12,7 @@ export interface BoardGroupUpdate {
   name?: string | null;
   slug?: string | null;
   description?: string | null;
+  project_context?: string | null;
+  claude_context?: string | null;
+  gemini_context?: string | null;
 }

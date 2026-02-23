@@ -563,10 +563,17 @@ async def _notify_agent_on_task_assign(
     ]
     if description:
         details.append(f"Description: {description}")
+    project_context = (board.project_context or "").strip()
+    context_suffix = ""
+    if project_context:
+        context_suffix = f"\n\n---\nProject context:\n{project_context[:500]}"
+        if len(board.project_context or "") > 500:
+            context_suffix += "..."
     message = (
         "TASK ASSIGNED\n"
         + "\n".join(details)
-        + ("\n\nTake action: open the task and begin work. " "Post updates as task comments.")
+        + "\n\nTake action: open the task and begin work. Post updates as task comments."
+        + context_suffix
     )
     error = await _send_agent_task_message(
         dispatch=dispatch,

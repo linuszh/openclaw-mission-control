@@ -187,8 +187,8 @@ export default function NewBoardPage() {
         forceRedirectUrl: "/boards/new",
         signUpForceRedirectUrl: "/boards/new",
       }}
-      title="Create board"
-      description="Boards organize tasks and agents by mission context."
+      title="Create project"
+      description="Projects organize tasks and agents by mission context."
       isAdmin={isAdmin}
       adminOnlyMessage="Only organization owners and admins can create boards."
     >

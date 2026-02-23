@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 
 from app.api.activity import router as activity_router
+from app.api.emails import router as emails_router
 from app.api.agent import router as agent_router
 from app.api.agents import router as agents_router
 from app.api.approvals import router as approvals_router
@@ -35,8 +36,9 @@ from app.core.config import settings
 from app.core.error_handling import install_error_handling
 from app.core.logging import configure_logging, get_logger
 from app.core.openapi import build_custom_openapi
-from app.db.session import init_db
+from app.db.session import async_session_maker, init_db
 from app.schemas.health import HealthStatusResponse
+from app.services.email_bootstrap import bootstrap_default_email_account
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -175,6 +177,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         settings.db_auto_migrate,
     )
     await init_db()
+    async with async_session_maker() as session:
+        await bootstrap_default_email_account(session)
     logger.info("app.lifecycle.started")
     try:
         yield
@@ -265,6 +269,7 @@ api_v1.include_router(auth_router)
 api_v1.include_router(agent_router)
 api_v1.include_router(agents_router)
 api_v1.include_router(activity_router)
+api_v1.include_router(emails_router)
 api_v1.include_router(gateway_router)
 api_v1.include_router(gateways_router)
 api_v1.include_router(metrics_router)

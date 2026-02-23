@@ -128,8 +128,8 @@ export default function NewBoardGroupPage() {
         message: "Sign in to create a board group.",
         forceRedirectUrl: "/board-groups/new",
       }}
-      title="Create board group"
-      description="Groups help agents discover related work across boards."
+      title="Create project group"
+      description="Groups help agents discover related work across projects."
     >
       <form
         onSubmit={handleSubmit}

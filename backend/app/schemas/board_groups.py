@@ -16,6 +16,9 @@ class BoardGroupBase(SQLModel):
     name: str
     slug: str
     description: str | None = None
+    project_context: str | None = None
+    claude_context: str | None = None
+    gemini_context: str | None = None
 
 
 class BoardGroupCreate(BoardGroupBase):
@@ -28,6 +31,9 @@ class BoardGroupUpdate(SQLModel):
     name: str | None = None
     slug: str | None = None
     description: str | None = None
+    project_context: str | None = None
+    claude_context: str | None = None
+    gemini_context: str | None = None
 
 
 class BoardGroupRead(BoardGroupBase):

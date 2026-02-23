@@ -42,39 +42,43 @@ export default function AssistantHubPage() {
           </Card>
         </Link>
 
-        <Card className="opacity-60 grayscale-[0.5] h-full border-dashed">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-purple-500" />
-              <CardTitle>Chat Logic</CardTitle>
-            </div>
-            <CardDescription>
-              Conversational interface for your boards. (Coming Soon)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-slate-500">
-              Directly interact with the Gatekeeper to manage your boards via chat.
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/assistant/chat">
+          <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full border-2 border-transparent hover:border-purple-200">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-purple-500" />
+                <CardTitle>Chat Logic</CardTitle>
+              </div>
+              <CardDescription>
+                Conversational interface for your projects.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-slate-500">
+                Directly interact with the Gatekeeper to manage your projects via chat.
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="opacity-60 grayscale-[0.5] h-full border-dashed">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-emerald-500" />
-              <CardTitle>Daily Briefing</CardTitle>
-            </div>
-            <CardDescription>
-              Your automated morning report. (Coming Soon)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-slate-500">
-              Summarized view of pending approvals, blocked tasks, and project progress.
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/assistant/briefing">
+          <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full border-2 border-transparent hover:border-emerald-200">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-emerald-500" />
+                <CardTitle>Daily Briefing</CardTitle>
+              </div>
+              <CardDescription>
+                Your automated morning report.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-slate-500">
+                Summarized view of pending approvals, blocked tasks, and project progress.
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="mt-12">

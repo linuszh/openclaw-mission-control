@@ -43,6 +43,20 @@ class EmailAccountRead(BaseModel):
     updated_at: datetime
 
 
+class EmailConvertRequest(BaseModel):
+    """Payload for converting an email into a task."""
+
+    board_id: UUID
+    title: str | None = None
+    description: str | None = None
+
+
+class EmailSummarizeResponse(BaseModel):
+    """Response for the AI summary dispatch endpoint."""
+
+    dispatched: bool
+
+
 class EmailMessageRead(BaseModel):
     """Schema for reading synced email messages."""
 

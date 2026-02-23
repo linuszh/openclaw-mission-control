@@ -132,7 +132,7 @@ export function DashboardSidebar() {
 
           <div>
             <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Boards
+              Projects
             </p>
             <div className="mt-1 space-y-1">
               <Link
@@ -145,7 +145,7 @@ export function DashboardSidebar() {
                 )}
               >
                 <Folder className="h-4 w-4" />
-                Board groups
+                Project groups
               </Link>
               <Link
                 href="/boards"
@@ -157,7 +157,7 @@ export function DashboardSidebar() {
                 )}
               >
                 <LayoutGrid className="h-4 w-4" />
-                Boards
+                Projects
               </Link>
               <Link
                 href="/tags"

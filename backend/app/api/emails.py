@@ -5,19 +5,33 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlmodel import paginate
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import ORG_MEMBER_DEP, SESSION_DEP
+from app.db.pagination import paginate
+from app.core.logging import get_logger
+from app.models.agents import Agent
+from app.models.boards import Board
 from app.models.email import EmailAccount, EmailMessage
-from app.schemas.email import EmailAccountCreate, EmailAccountRead, EmailMessageRead
-from app.services.organizations import OrganizationContext
+from app.models.tasks import Task
+from app.schemas.email import (
+    EmailAccountCreate,
+    EmailAccountRead,
+    EmailConvertRequest,
+    EmailMessageRead,
+    EmailSummarizeResponse,
+)
+from app.schemas.tasks import TaskRead
+from app.services.activity_log import record_activity
 from app.services.email_sync import enqueue_email_sync
+from app.services.openclaw.gateway_dispatch import GatewayDispatchService
+from app.services.organizations import OrganizationContext
 
 router = APIRouter(prefix="/emails", tags=["emails"])
+logger = get_logger(__name__)
 
 
 @router.post("/accounts", response_model=EmailAccountRead)
@@ -34,10 +48,10 @@ async def create_account(
     session.add(account)
     await session.commit()
     await session.refresh(account)
-    
+
     # Trigger an immediate sync for the new account
     enqueue_email_sync()
-    
+
     return account
 
 
@@ -54,14 +68,14 @@ async def delete_account(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Email account not found",
         )
-    
+
     # Delete related messages first (cascading)
     statement = select(EmailMessage).where(EmailMessage.email_account_id == account.id)
     result = await session.exec(statement)
     messages = result.all()
     for msg in messages:
         await session.delete(msg)
-        
+
     await session.delete(account)
     await session.commit()
 
@@ -74,8 +88,8 @@ async def list_emails(
     """List all synced emails for the current organization."""
     statement = (
         select(EmailMessage)
-        .where(EmailMessage.organization_id == ctx.organization.id)
-        .order_by(EmailMessage.received_at.desc())
+        .where(col(EmailMessage.organization_id) == ctx.organization.id)
+        .order_by(col(EmailMessage.received_at).desc())
     )
     return await paginate(session, statement)
 
@@ -107,3 +121,114 @@ async def get_email(
     return email_msg
 
 
+@router.post("/{email_id}/convert", response_model=TaskRead)
+async def convert_email_to_task(
+    email_id: UUID,
+    payload: EmailConvertRequest,
+    ctx: OrganizationContext = ORG_MEMBER_DEP,
+    session: AsyncSession = SESSION_DEP,
+) -> Task:
+    """Convert a synced email into a task on the specified board."""
+    email_msg = await session.get(EmailMessage, email_id)
+    if not email_msg or email_msg.organization_id != ctx.organization.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
+
+    board = await session.get(Board, payload.board_id)
+    if not board or board.organization_id != ctx.organization.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Board not found",
+        )
+
+    title = payload.title or email_msg.subject
+    description = (
+        payload.description
+        or f"From: {email_msg.sender}\n\n{email_msg.body or ''}"
+    )
+
+    task = Task(
+        board_id=board.id,
+        title=title,
+        description=description,
+        status="inbox",
+    )
+    session.add(task)
+    await session.flush()
+    await session.commit()
+    await session.refresh(task)
+
+    record_activity(
+        session,
+        event_type="task.created",
+        task_id=task.id,
+        message=f"Task created from email: {task.title}.",
+    )
+    await session.commit()
+
+    return task
+
+
+@router.post("/{email_id}/summarize", response_model=EmailSummarizeResponse)
+async def summarize_email(
+    email_id: UUID,
+    ctx: OrganizationContext = ORG_MEMBER_DEP,
+    session: AsyncSession = SESSION_DEP,
+) -> EmailSummarizeResponse:
+    """Dispatch an AI summary request for an email to the Gatekeeper agent."""
+    email_msg = await session.get(EmailMessage, email_id)
+    if not email_msg or email_msg.organization_id != ctx.organization.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
+
+    # Find the Gatekeeper (main) agent
+    gatekeeper = await Agent.objects.by_id("main").first(session)
+    if gatekeeper is None or not gatekeeper.openclaw_session_id:
+        logger.warning("email.summarize.no_gatekeeper email_id=%s", email_id)
+        return EmailSummarizeResponse(dispatched=False)
+
+    # Find any board in this org that has a gateway configured
+    board_result = await session.exec(
+        select(Board)
+        .where(
+            col(Board.organization_id) == ctx.organization.id,
+            col(Board.gateway_id).is_not(None),
+        )
+        .limit(1)
+    )
+    board = board_result.first()
+    if board is None:
+        logger.warning("email.summarize.no_gateway_board email_id=%s", email_id)
+        return EmailSummarizeResponse(dispatched=False)
+
+    dispatch = GatewayDispatchService(session)
+    config = await dispatch.optional_gateway_config_for_board(board)
+    if config is None:
+        return EmailSummarizeResponse(dispatched=False)
+
+    message = (
+        f"Please summarize this email:\n\n"
+        f"From: {email_msg.sender}\n"
+        f"Subject: {email_msg.subject}\n\n"
+        f"{email_msg.body or ''}"
+    )
+
+    error = await dispatch.try_send_agent_message(
+        session_key=gatekeeper.openclaw_session_id,
+        config=config,
+        agent_name=gatekeeper.name,
+        message=message,
+        deliver=False,
+    )
+
+    if error is not None:
+        logger.warning(
+            "email.summarize.dispatch_failed email_id=%s error=%s", email_id, error
+        )
+        return EmailSummarizeResponse(dispatched=False)
+
+    return EmailSummarizeResponse(dispatched=True)

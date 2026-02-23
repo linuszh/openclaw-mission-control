@@ -117,8 +117,8 @@ export default function BoardsPage() {
           forceRedirectUrl: "/boards",
           signUpForceRedirectUrl: "/boards",
         }}
-        title="Boards"
-        description={`Manage boards and task workflows. ${boards.length} board${boards.length === 1 ? "" : "s"} total.`}
+        title="Projects"
+        description={`Manage projects and task workflows. ${boards.length} project${boards.length === 1 ? "" : "s"} total.`}
         headerActions={
           boards.length > 0 && isAdmin ? (
             <Link

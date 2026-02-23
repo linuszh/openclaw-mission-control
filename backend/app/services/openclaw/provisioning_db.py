@@ -30,6 +30,7 @@ from app.db.session import async_session_maker
 from app.models.activity_events import ActivityEvent
 from app.models.agents import Agent
 from app.models.approvals import Approval
+from app.models.board_groups import BoardGroup
 from app.models.board_memory import BoardMemory
 from app.models.board_webhooks import BoardWebhook
 from app.models.boards import Board
@@ -218,6 +219,7 @@ class OpenClawProvisioningService(OpenClawDBService):
 
         # Strict behavior: provisioning errors surface to the caller. The DB row exists
         # so a later retry can succeed with the same deterministic identity/session key.
+        await _apply_group_context_merge(self.session, board)
         await self._gateway.apply_agent_lifecycle(
             agent=agent,
             gateway=request.gateway,
@@ -498,6 +500,30 @@ def _base_result(
     )
 
 
+async def _apply_group_context_merge(
+    session: "AsyncSession",
+    board: Board,
+) -> None:
+    """Merge board-group context fields into the board object (in-memory only, not persisted).
+
+    Uses set_committed_value so SQLAlchemy does not treat the changes as pending dirty state.
+    Board-level context always wins; group context is used as the fallback base.
+    """
+    from sqlalchemy.orm.attributes import set_committed_value
+
+    if board.board_group_id is None:
+        return
+    group = await BoardGroup.objects.by_id(board.board_group_id).first(session)
+    if group is None:
+        return
+    if not board.claude_context and group.claude_context:
+        set_committed_value(board, "claude_context", group.claude_context)
+    if not board.gemini_context and group.gemini_context:
+        set_committed_value(board, "gemini_context", group.gemini_context)
+    if not board.project_context and group.project_context:
+        set_committed_value(board, "project_context", group.project_context)
+
+
 def _boards_by_id(
     boards: list[Board],
     *,
@@ -570,6 +596,7 @@ async def _sync_one_agent(
     agent: Agent,
     board: Board,
 ) -> bool:
+    await _apply_group_context_merge(ctx.session, board)
     auth_token, fatal = await _resolve_agent_auth_token(
         ctx,
         result,

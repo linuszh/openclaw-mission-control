@@ -90,8 +90,8 @@ export default function BoardGroupsPage() {
           message: "Sign in to view board groups.",
           forceRedirectUrl: "/board-groups",
         }}
-        title="Board groups"
-        description={`Group boards so agents can see related work. ${groups.length} group${groups.length === 1 ? "" : "s"} total.`}
+        title="Project groups"
+        description={`Group projects so agents can see related work. ${groups.length} group${groups.length === 1 ? "" : "s"} total.`}
         headerActions={
           <Link
             href="/board-groups/new"

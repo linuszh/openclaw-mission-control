@@ -12,4 +12,7 @@ export interface BoardGroupCreate {
   name: string;
   slug: string;
   description?: string | null;
+  project_context?: string | null;
+  claude_context?: string | null;
+  gemini_context?: string | null;
 }

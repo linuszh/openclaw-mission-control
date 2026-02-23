@@ -68,6 +68,13 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
 
+    # Default email account bootstrap (optional)
+    default_email_address: str = ""
+    default_email_password: str = ""
+    default_imap_server: str = ""
+    default_imap_port: int = 993
+    default_imap_use_ssl: bool = True
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "text"

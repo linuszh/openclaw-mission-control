@@ -12,6 +12,9 @@ export interface BoardGroupRead {
   name: string;
   slug: string;
   description?: string | null;
+  project_context?: string | null;
+  claude_context?: string | null;
+  gemini_context?: string | null;
   id: string;
   organization_id: string;
   created_at: string;

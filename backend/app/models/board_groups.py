@@ -23,5 +23,8 @@ class BoardGroup(TenantScoped, table=True):
     name: str
     slug: str = Field(index=True)
     description: str | None = None
+    project_context: str | None = None
+    claude_context: str | None = None
+    gemini_context: str | None = None
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)

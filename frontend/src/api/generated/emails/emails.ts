@@ -23,10 +23,13 @@ import type {
 import type {
   EmailAccountCreate,
   EmailAccountRead,
+  EmailConvertRequest,
   EmailMessageRead,
+  EmailSummarizeResponse,
   HTTPValidationError,
   ListEmailsApiV1EmailsGetParams,
   PageEmailMessageRead,
+  TaskRead,
 } from ".././model";
 
 import { customFetch } from "../../mutator";
@@ -861,3 +864,259 @@ export function useGetEmailApiV1EmailsEmailIdGet<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Convert a synced email into a task on the specified board.
+ * @summary Convert Email To Task
+ */
+export type convertEmailToTaskApiV1EmailsEmailIdConvertPostResponse200 = {
+  data: TaskRead;
+  status: 200;
+};
+
+export type convertEmailToTaskApiV1EmailsEmailIdConvertPostResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type convertEmailToTaskApiV1EmailsEmailIdConvertPostResponseSuccess =
+  convertEmailToTaskApiV1EmailsEmailIdConvertPostResponse200 & {
+    headers: Headers;
+  };
+export type convertEmailToTaskApiV1EmailsEmailIdConvertPostResponseError =
+  convertEmailToTaskApiV1EmailsEmailIdConvertPostResponse422 & {
+    headers: Headers;
+  };
+
+export type convertEmailToTaskApiV1EmailsEmailIdConvertPostResponse =
+  | convertEmailToTaskApiV1EmailsEmailIdConvertPostResponseSuccess
+  | convertEmailToTaskApiV1EmailsEmailIdConvertPostResponseError;
+
+export const getConvertEmailToTaskApiV1EmailsEmailIdConvertPostUrl = (
+  emailId: string,
+) => {
+  return `/api/v1/emails/${emailId}/convert`;
+};
+
+export const convertEmailToTaskApiV1EmailsEmailIdConvertPost = async (
+  emailId: string,
+  emailConvertRequest: EmailConvertRequest,
+  options?: RequestInit,
+): Promise<convertEmailToTaskApiV1EmailsEmailIdConvertPostResponse> => {
+  return customFetch<convertEmailToTaskApiV1EmailsEmailIdConvertPostResponse>(
+    getConvertEmailToTaskApiV1EmailsEmailIdConvertPostUrl(emailId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(emailConvertRequest),
+    },
+  );
+};
+
+export const getConvertEmailToTaskApiV1EmailsEmailIdConvertPostMutationOptions =
+  <TError = HTTPValidationError, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof convertEmailToTaskApiV1EmailsEmailIdConvertPost>
+      >,
+      TError,
+      { emailId: string; data: EmailConvertRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  }): UseMutationOptions<
+    Awaited<ReturnType<typeof convertEmailToTaskApiV1EmailsEmailIdConvertPost>>,
+    TError,
+    { emailId: string; data: EmailConvertRequest },
+    TContext
+  > => {
+    const mutationKey = ["convertEmailToTaskApiV1EmailsEmailIdConvertPost"];
+    const { mutation: mutationOptions, request: requestOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey }, request: undefined };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof convertEmailToTaskApiV1EmailsEmailIdConvertPost>
+      >,
+      { emailId: string; data: EmailConvertRequest }
+    > = (props) => {
+      const { emailId, data } = props ?? {};
+
+      return convertEmailToTaskApiV1EmailsEmailIdConvertPost(
+        emailId,
+        data,
+        requestOptions,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type ConvertEmailToTaskApiV1EmailsEmailIdConvertPostMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof convertEmailToTaskApiV1EmailsEmailIdConvertPost>>
+  >;
+export type ConvertEmailToTaskApiV1EmailsEmailIdConvertPostMutationBody =
+  EmailConvertRequest;
+export type ConvertEmailToTaskApiV1EmailsEmailIdConvertPostMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Convert Email To Task
+ */
+export const useConvertEmailToTaskApiV1EmailsEmailIdConvertPost = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof convertEmailToTaskApiV1EmailsEmailIdConvertPost>
+      >,
+      TError,
+      { emailId: string; data: EmailConvertRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof convertEmailToTaskApiV1EmailsEmailIdConvertPost>>,
+  TError,
+  { emailId: string; data: EmailConvertRequest },
+  TContext
+> => {
+  return useMutation(
+    getConvertEmailToTaskApiV1EmailsEmailIdConvertPostMutationOptions(options),
+    queryClient,
+  );
+};
+/**
+ * Dispatch an AI summary request for an email to the Gatekeeper agent.
+ * @summary Summarize Email
+ */
+export type summarizeEmailApiV1EmailsEmailIdSummarizePostResponse200 = {
+  data: EmailSummarizeResponse;
+  status: 200;
+};
+
+export type summarizeEmailApiV1EmailsEmailIdSummarizePostResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type summarizeEmailApiV1EmailsEmailIdSummarizePostResponseSuccess =
+  summarizeEmailApiV1EmailsEmailIdSummarizePostResponse200 & {
+    headers: Headers;
+  };
+export type summarizeEmailApiV1EmailsEmailIdSummarizePostResponseError =
+  summarizeEmailApiV1EmailsEmailIdSummarizePostResponse422 & {
+    headers: Headers;
+  };
+
+export type summarizeEmailApiV1EmailsEmailIdSummarizePostResponse =
+  | summarizeEmailApiV1EmailsEmailIdSummarizePostResponseSuccess
+  | summarizeEmailApiV1EmailsEmailIdSummarizePostResponseError;
+
+export const getSummarizeEmailApiV1EmailsEmailIdSummarizePostUrl = (
+  emailId: string,
+) => {
+  return `/api/v1/emails/${emailId}/summarize`;
+};
+
+export const summarizeEmailApiV1EmailsEmailIdSummarizePost = async (
+  emailId: string,
+  options?: RequestInit,
+): Promise<summarizeEmailApiV1EmailsEmailIdSummarizePostResponse> => {
+  return customFetch<summarizeEmailApiV1EmailsEmailIdSummarizePostResponse>(
+    getSummarizeEmailApiV1EmailsEmailIdSummarizePostUrl(emailId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getSummarizeEmailApiV1EmailsEmailIdSummarizePostMutationOptions = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof summarizeEmailApiV1EmailsEmailIdSummarizePost>>,
+    TError,
+    { emailId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof summarizeEmailApiV1EmailsEmailIdSummarizePost>>,
+  TError,
+  { emailId: string },
+  TContext
+> => {
+  const mutationKey = ["summarizeEmailApiV1EmailsEmailIdSummarizePost"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof summarizeEmailApiV1EmailsEmailIdSummarizePost>>,
+    { emailId: string }
+  > = (props) => {
+    const { emailId } = props ?? {};
+
+    return summarizeEmailApiV1EmailsEmailIdSummarizePost(
+      emailId,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SummarizeEmailApiV1EmailsEmailIdSummarizePostMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof summarizeEmailApiV1EmailsEmailIdSummarizePost>>
+  >;
+
+export type SummarizeEmailApiV1EmailsEmailIdSummarizePostMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Summarize Email
+ */
+export const useSummarizeEmailApiV1EmailsEmailIdSummarizePost = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof summarizeEmailApiV1EmailsEmailIdSummarizePost>>,
+      TError,
+      { emailId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof summarizeEmailApiV1EmailsEmailIdSummarizePost>>,
+  TError,
+  { emailId: string },
+  TContext
+> => {
+  return useMutation(
+    getSummarizeEmailApiV1EmailsEmailIdSummarizePostMutationOptions(options),
+    queryClient,
+  );
+};

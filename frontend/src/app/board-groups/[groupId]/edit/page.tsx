@@ -27,6 +27,7 @@ import { DashboardPageLayout } from "@/components/templates/DashboardPageLayout"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const slugify = (value: string) =>
   value
@@ -45,6 +46,9 @@ export default function EditBoardGroupPage() {
 
   const [name, setName] = useState<string | undefined>(undefined);
   const [description, setDescription] = useState<string | undefined>(undefined);
+  const [projectContext, setProjectContext] = useState<string | undefined>(undefined);
+  const [claudeContext, setClaudeContext] = useState<string | undefined>(undefined);
+  const [geminiContext, setGeminiContext] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   const [boardSearch, setBoardSearch] = useState("");
@@ -80,6 +84,9 @@ export default function EditBoardGroupPage() {
 
   const resolvedName = name ?? baseGroup?.name ?? "";
   const resolvedDescription = description ?? baseGroup?.description ?? "";
+  const resolvedProjectContext = projectContext ?? baseGroup?.project_context ?? "";
+  const resolvedClaudeContext = claudeContext ?? baseGroup?.claude_context ?? "";
+  const resolvedGeminiContext = geminiContext ?? baseGroup?.gemini_context ?? "";
 
   const allBoardsQuery = useListBoardsApiV1BoardsGet<
     listBoardsApiV1BoardsGetResponse,
@@ -240,6 +247,9 @@ export default function EditBoardGroupPage() {
       name: trimmedName,
       slug: slugify(trimmedName),
       description: resolvedDescription.trim() || null,
+      project_context: resolvedProjectContext.trim() || null,
+      claude_context: resolvedClaudeContext.trim() || null,
+      gemini_context: resolvedGeminiContext.trim() || null,
     };
 
     setIsAssignmentsSaving(true);
@@ -323,12 +333,58 @@ export default function EditBoardGroupPage() {
           />
         </div>
 
+        <section className="space-y-4 border-t border-slate-100 pt-6">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Architecture &amp; Context</h2>
+            <p className="text-xs text-slate-600">
+              Define shared context inherited by all projects in this group.
+            </p>
+          </div>
+          <Tabs defaultValue="project" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="project">Project Hub</TabsTrigger>
+              <TabsTrigger value="claude">Claude Code</TabsTrigger>
+              <TabsTrigger value="gemini">Gemini CLI</TabsTrigger>
+            </TabsList>
+            <TabsContent value="project" className="space-y-2 pt-2">
+              <label className="text-xs font-medium text-slate-500 uppercase">General Project Context</label>
+              <Textarea
+                value={resolvedProjectContext}
+                onChange={(e) => setProjectContext(e.target.value)}
+                placeholder="Describe the product architecture, tech stack, and core mandates."
+                className="min-h-[200px] font-mono text-xs"
+                disabled={isLoading || !baseGroup}
+              />
+            </TabsContent>
+            <TabsContent value="claude" className="space-y-2 pt-2">
+              <label className="text-xs font-medium text-slate-500 uppercase">Claude Code Specific (CLAUDE.md)</label>
+              <Textarea
+                value={resolvedClaudeContext}
+                onChange={(e) => setClaudeContext(e.target.value)}
+                placeholder="Coding standards, test commands, and specific instructions for Claude Code CLI."
+                className="min-h-[200px] font-mono text-xs"
+                disabled={isLoading || !baseGroup}
+              />
+            </TabsContent>
+            <TabsContent value="gemini" className="space-y-2 pt-2">
+              <label className="text-xs font-medium text-slate-500 uppercase">Gemini CLI Specific (GEMINI.md)</label>
+              <Textarea
+                value={resolvedGeminiContext}
+                onChange={(e) => setGeminiContext(e.target.value)}
+                placeholder="Specific instructions for Gemini CLI during automated development."
+                className="min-h-[200px] font-mono text-xs"
+                disabled={isLoading || !baseGroup}
+              />
+            </TabsContent>
+          </Tabs>
+        </section>
+
         <div className="space-y-2 border-t border-slate-100 pt-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-slate-900">Boards</p>
+              <p className="text-sm font-medium text-slate-900">Projects</p>
               <p className="mt-1 text-xs text-slate-500">
-                Assign boards to this group to share context across related
+                Assign projects to this group to share context across related
                 work.
               </p>
             </div>
@@ -340,7 +396,7 @@ export default function EditBoardGroupPage() {
           <Input
             value={boardSearch}
             onChange={(event) => setBoardSearch(event.target.value)}
-            placeholder="Search boards..."
+            placeholder="Search projects..."
             disabled={isLoading || !baseGroup}
           />
 

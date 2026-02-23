@@ -340,6 +340,8 @@ def _build_context(
         "board_rule_max_agents": str(board.max_agents),
         "is_board_lead": str(agent.is_board_lead).lower(),
         "is_main_agent": "false",
+        "claude_context": board.claude_context or "",
+        "gemini_context": board.gemini_context or "",
         "session_key": session_key,
         "workspace_path": workspace_path,
         "base_url": base_url,
@@ -982,6 +984,8 @@ class BoardAgentLifecycleManager(BaseAgentLifecycleManager):
                 "WORKFLOW.md",
                 "STATUS.md",
                 "APIS.md",
+                "CLAUDE.md",
+                "GEMINI.md",
             }
         )
 

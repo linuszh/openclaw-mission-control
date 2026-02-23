@@ -60,6 +60,8 @@ DEFAULT_GATEWAY_FILES = frozenset(
         "USER.md",
         "HEARTBEAT.md",
         "MEMORY.md",
+        "CLAUDE.md",
+        "GEMINI.md",
     },
 )
 
@@ -75,6 +77,8 @@ LEAD_GATEWAY_FILES = frozenset(
         "MEMORY.md",
         "TOOLS.md",
         "HEARTBEAT.md",
+        "CLAUDE.md",
+        "GEMINI.md",
     },
 )
 
@@ -110,6 +114,8 @@ BOARD_SHARED_TEMPLATE_MAP = {
     "HEARTBEAT.md": "BOARD_HEARTBEAT.md.j2",
     "USER.md": "BOARD_USER.md.j2",
     "TOOLS.md": "BOARD_TOOLS.md.j2",
+    "CLAUDE.md": "CLAUDE.md.j2",
+    "GEMINI.md": "GEMINI.md.j2",
 }
 
 LEAD_TEMPLATE_MAP: dict[str, str] = {}

@@ -23,6 +23,7 @@ import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { Input } from "@/components/ui/input";
 import SearchableSelect from "@/components/ui/searchable-select";
 import { getSupportedTimezones } from "@/lib/timezones";
+import { EmailAccountsSettings } from "@/components/organisms/EmailAccountsSettings";
 
 type ClerkGlobal = {
   signOut?: (options?: { redirectUrl?: string }) => Promise<void> | void;
@@ -239,6 +240,10 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </form>
+          </section>
+
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <EmailAccountsSettings />
           </section>
 
           <section className="rounded-xl border border-rose-200 bg-rose-50/70 p-6 shadow-sm">

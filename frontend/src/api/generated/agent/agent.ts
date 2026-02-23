@@ -54,6 +54,8 @@ import type {
   ListTaskCommentsApiV1AgentBoardsBoardIdTasksTaskIdCommentsGetParams,
   ListTasksApiV1AgentBoardsBoardIdTasksGetParams,
   OkResponse,
+  RelayTaskRequest,
+  RelayTaskResponse,
   SoulUpdateRequest,
   TagRef,
   TaskCommentCreate,
@@ -1606,6 +1608,128 @@ export function useListTagsApiV1AgentBoardsBoardIdTagsGet<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
+/**
+ * Create a task on a target board as a board lead from a different board.
+
+The caller must be a board lead on any board in the same gateway. The task is auto-assigned to the target board's lead and a nudge is dispatched.
+
+Use this to implement cross-board orchestration — e.g. a Dispatch lead (GLM) relaying inbox work to an Execution lead (Qwen).
+ * @summary Relay a task to another board
+ */
+export type agentLeadRelayTaskResponse200 = {
+  data: RelayTaskResponse;
+  status: 200;
+};
+
+export type agentLeadRelayTaskResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type agentLeadRelayTaskResponseSuccess =
+  agentLeadRelayTaskResponse200 & {
+    headers: Headers;
+  };
+export type agentLeadRelayTaskResponseError = agentLeadRelayTaskResponse422 & {
+  headers: Headers;
+};
+
+export type agentLeadRelayTaskResponse =
+  | agentLeadRelayTaskResponseSuccess
+  | agentLeadRelayTaskResponseError;
+
+export const getAgentLeadRelayTaskUrl = (boardId: string) => {
+  return `/api/v1/agent/boards/${boardId}/relay-task`;
+};
+
+export const agentLeadRelayTask = async (
+  boardId: string,
+  relayTaskRequest: RelayTaskRequest,
+  options?: RequestInit,
+): Promise<agentLeadRelayTaskResponse> => {
+  return customFetch<agentLeadRelayTaskResponse>(
+    getAgentLeadRelayTaskUrl(boardId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(relayTaskRequest),
+    },
+  );
+};
+
+export const getAgentLeadRelayTaskMutationOptions = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof agentLeadRelayTask>>,
+    TError,
+    { boardId: string; data: RelayTaskRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof agentLeadRelayTask>>,
+  TError,
+  { boardId: string; data: RelayTaskRequest },
+  TContext
+> => {
+  const mutationKey = ["agentLeadRelayTask"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof agentLeadRelayTask>>,
+    { boardId: string; data: RelayTaskRequest }
+  > = (props) => {
+    const { boardId, data } = props ?? {};
+
+    return agentLeadRelayTask(boardId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AgentLeadRelayTaskMutationResult = NonNullable<
+  Awaited<ReturnType<typeof agentLeadRelayTask>>
+>;
+export type AgentLeadRelayTaskMutationBody = RelayTaskRequest;
+export type AgentLeadRelayTaskMutationError = HTTPValidationError;
+
+/**
+ * @summary Relay a task to another board
+ */
+export const useAgentLeadRelayTask = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof agentLeadRelayTask>>,
+      TError,
+      { boardId: string; data: RelayTaskRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof agentLeadRelayTask>>,
+  TError,
+  { boardId: string; data: RelayTaskRequest },
+  TContext
+> => {
+  return useMutation(
+    getAgentLeadRelayTaskMutationOptions(options),
+    queryClient,
+  );
+};
 /**
  * Update a task after board-level authorization checks.
 

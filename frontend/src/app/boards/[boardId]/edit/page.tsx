@@ -55,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SearchableSelect from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { localDateInputToUtcIso, toLocalDateInput } from "@/lib/datetime";
@@ -303,6 +304,9 @@ export default function EditBoardPage() {
     undefined,
   );
   const [targetDate, setTargetDate] = useState<string | undefined>(undefined);
+  const [projectContext, setProjectContext] = useState<string | undefined>(undefined);
+  const [claudeContext, setClaudeContext] = useState<string | undefined>(undefined);
+  const [geminiContext, setGeminiContext] = useState<string | undefined>(undefined);
 
   const [error, setError] = useState<string | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
@@ -518,6 +522,9 @@ export default function EditBoardPage() {
       : "");
   const resolvedTargetDate =
     targetDate ?? toLocalDateInput(baseBoard?.target_date);
+  const resolvedProjectContext = projectContext ?? baseBoard?.project_context ?? "";
+  const resolvedClaudeContext = claudeContext ?? baseBoard?.claude_context ?? "";
+  const resolvedGeminiContext = geminiContext ?? baseBoard?.gemini_context ?? "";
 
   const displayGatewayId = resolvedGatewayId || gateways[0]?.id || "";
   const isWebhookCreating = createWebhookMutation.isPending;
@@ -665,6 +672,9 @@ export default function EditBoardPage() {
         resolvedBoardType === "general"
           ? null
           : localDateInputToUtcIso(resolvedTargetDate),
+      project_context: resolvedProjectContext || null,
+      claude_context: resolvedClaudeContext || null,
+      gemini_context: resolvedGeminiContext || null,
     };
 
     updateBoardMutation.mutate({ boardId, data: payload });
@@ -937,6 +947,58 @@ export default function EditBoardPage() {
                 </div>
               </>
             ) : null}
+
+            <section className="space-y-4 border-t border-slate-200 pt-4">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">
+                  Architecture & Context
+                </h2>
+                <p className="text-xs text-slate-600">
+                  Define high-level product guidelines and specific context for your AI coding tools.
+                </p>
+              </div>
+              
+              <Tabs defaultValue="project" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="project">Project Hub</TabsTrigger>
+                  <TabsTrigger value="claude">Claude Code</TabsTrigger>
+                  <TabsTrigger value="gemini">Gemini CLI</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="project" className="space-y-2 pt-2">
+                  <label className="text-xs font-medium text-slate-500 uppercase">General Project Context (GEMINI.md)</label>
+                  <Textarea
+                    value={resolvedProjectContext}
+                    onChange={(event) => setProjectContext(event.target.value)}
+                    placeholder="Describe the product architecture, tech stack, and core mandates."
+                    className="min-h-[250px] font-mono text-xs"
+                    disabled={isLoading}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="claude" className="space-y-2 pt-2">
+                  <label className="text-xs font-medium text-slate-500 uppercase">Claude Code Specific (CLAUDE.md)</label>
+                  <Textarea
+                    value={resolvedClaudeContext}
+                    onChange={(event) => setClaudeContext(event.target.value)}
+                    placeholder="Coding standards, test commands, and specific instructions for Claude Code CLI."
+                    className="min-h-[250px] font-mono text-xs"
+                    disabled={isLoading}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="gemini" className="space-y-2 pt-2">
+                  <label className="text-xs font-medium text-slate-500 uppercase">Gemini CLI / Jules Specific</label>
+                  <Textarea
+                    value={resolvedGeminiContext}
+                    onChange={(event) => setGeminiContext(event.target.value)}
+                    placeholder="Specific instructions for Gemini CLI / Jules during automated development."
+                    className="min-h-[250px] font-mono text-xs"
+                    disabled={isLoading}
+                  />
+                </TabsContent>
+              </Tabs>
+            </section>
 
             <section className="space-y-3 border-t border-slate-200 pt-4">
               <div>

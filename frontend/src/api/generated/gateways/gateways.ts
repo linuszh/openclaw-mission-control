@@ -39,6 +39,7 @@ import type {
   ImportGatewayAgentsApiV1GatewaysGatewayIdAgentsImportPost200,
   LimitOffsetPageTypeVarCustomizedGatewayRead,
   ListGatewayModelsApiV1GatewaysGatewayIdModelsGet200,
+  ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
   ListGatewaySessionsApiV1GatewaysSessionsGetParams,
   ListGatewaysApiV1GatewaysGetParams,
   OkResponse,
@@ -2438,6 +2439,9 @@ export const useSyncGatewayTemplatesApiV1GatewaysGatewayIdTemplatesSyncPost = <
 };
 /**
  * Return models available on the gateway.
+
+When configured=true, only returns models from providers explicitly
+configured in the gateway (cross-referenced via config.get).
  * @summary List Gateway Models
  */
 export type listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse200 = {
@@ -2465,16 +2469,30 @@ export type listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse =
 
 export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetUrl = (
   gatewayId: string,
+  params?: ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
 ) => {
-  return `/api/v1/gateways/${gatewayId}/models`;
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/gateways/${gatewayId}/models?${stringifiedParams}`
+    : `/api/v1/gateways/${gatewayId}/models`;
 };
 
 export const listGatewayModelsApiV1GatewaysGatewayIdModelsGet = async (
   gatewayId: string,
+  params?: ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
   options?: RequestInit,
 ): Promise<listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse> => {
   return customFetch<listGatewayModelsApiV1GatewaysGatewayIdModelsGetResponse>(
-    getListGatewayModelsApiV1GatewaysGatewayIdModelsGetUrl(gatewayId),
+    getListGatewayModelsApiV1GatewaysGatewayIdModelsGetUrl(gatewayId, params),
     {
       ...options,
       method: "GET",
@@ -2484,8 +2502,12 @@ export const listGatewayModelsApiV1GatewaysGatewayIdModelsGet = async (
 
 export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryKey = (
   gatewayId: string,
+  params?: ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
 ) => {
-  return [`/api/v1/gateways/${gatewayId}/models`] as const;
+  return [
+    `/api/v1/gateways/${gatewayId}/models`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryOptions = <
@@ -2495,6 +2517,7 @@ export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryOptions = <
   TError = HTTPValidationError,
 >(
   gatewayId: string,
+  params?: ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -2512,12 +2535,15 @@ export const getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryKey(gatewayId);
+    getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryKey(
+      gatewayId,
+      params,
+    );
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listGatewayModelsApiV1GatewaysGatewayIdModelsGet>>
   > = ({ signal }) =>
-    listGatewayModelsApiV1GatewaysGatewayIdModelsGet(gatewayId, {
+    listGatewayModelsApiV1GatewaysGatewayIdModelsGet(gatewayId, params, {
       signal,
       ...requestOptions,
     });
@@ -2550,6 +2576,7 @@ export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
   TError = HTTPValidationError,
 >(
   gatewayId: string,
+  params: undefined | ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -2585,6 +2612,7 @@ export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
   TError = HTTPValidationError,
 >(
   gatewayId: string,
+  params?: ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -2620,6 +2648,7 @@ export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
   TError = HTTPValidationError,
 >(
   gatewayId: string,
+  params?: ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -2647,6 +2676,7 @@ export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
   TError = HTTPValidationError,
 >(
   gatewayId: string,
+  params?: ListGatewayModelsApiV1GatewaysGatewayIdModelsGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -2666,6 +2696,7 @@ export function useListGatewayModelsApiV1GatewaysGatewayIdModelsGet<
   const queryOptions =
     getListGatewayModelsApiV1GatewaysGatewayIdModelsGetQueryOptions(
       gatewayId,
+      params,
       options,
     );
 

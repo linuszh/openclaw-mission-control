@@ -28,6 +28,9 @@ export interface BoardRead {
   /** @minimum 0 */
   max_agents?: number;
   default_model?: string | null;
+  project_context?: string | null;
+  claude_context?: string | null;
+  gemini_context?: string | null;
   id: string;
   organization_id: string;
   created_at: string;

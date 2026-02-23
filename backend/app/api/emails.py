@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import smtplib
+from datetime import UTC, datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import col, select
@@ -23,6 +28,7 @@ from app.schemas.email import (
     EmailAccountRead,
     EmailConvertRequest,
     EmailMessageRead,
+    EmailSendRequest,
     EmailSummarizeResponse,
     EmailUpdateRequest,
 )
@@ -34,6 +40,29 @@ from app.services.organizations import OrganizationContext
 
 router = APIRouter(prefix="/emails", tags=["emails"])
 logger = get_logger(__name__)
+
+
+def _smtp_send(account: EmailAccount, to: str, subject: str, body: str) -> None:
+    """Send an email via SMTP using the account's credentials (blocking)."""
+    msg = MIMEMultipart("alternative")
+    msg["From"] = account.email_address
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    smtp_server = account.smtp_server or account.imap_server
+    smtp_port = account.smtp_port or 587
+    use_ssl = account.smtp_use_ssl
+
+    if use_ssl and smtp_port == 465:
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+            server.login(account.imap_username, account.imap_password)
+            server.sendmail(account.email_address, to, msg.as_string())
+    else:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(account.imap_username, account.imap_password)
+            server.sendmail(account.email_address, to, msg.as_string())
 
 
 @router.post("/accounts", response_model=EmailAccountRead)
@@ -98,6 +127,61 @@ async def list_emails(
         .order_by(col(EmailMessage.received_at).desc())
     )
     return await paginate(session, statement)
+
+
+@router.get("/sent", response_model=DefaultLimitOffsetPage[EmailMessageRead])
+async def list_sent_emails(
+    ctx: OrganizationContext = ORG_MEMBER_DEP,
+    session: AsyncSession = SESSION_DEP,
+) -> Any:
+    """List all emails sent by agents for the current organization."""
+    statement = (
+        select(EmailMessage)
+        .where(
+            col(EmailMessage.organization_id) == ctx.organization.id,
+            col(EmailMessage.direction) == "sent",
+        )
+        .order_by(col(EmailMessage.received_at).desc())
+    )
+    return await paginate(session, statement)
+
+
+@router.post("/send", response_model=EmailMessageRead)
+async def send_email(
+    payload: EmailSendRequest,
+    ctx: OrganizationContext = ORG_MEMBER_DEP,
+    session: AsyncSession = SESSION_DEP,
+) -> EmailMessage:
+    """Send an outbound email from the org's first configured account and record it."""
+    statement = select(EmailAccount).where(
+        EmailAccount.organization_id == ctx.organization.id
+    )
+    result = await session.exec(statement)
+    account = result.first()
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No email account configured for this organization.",
+        )
+    await asyncio.to_thread(
+        _smtp_send, account, payload.to, payload.subject, payload.body
+    )
+    sent_msg = EmailMessage(
+        organization_id=ctx.organization.id,
+        email_account_id=account.id,
+        uid=f"sent-{uuid4()}",
+        sender=account.email_address,
+        subject=payload.subject,
+        snippet=payload.body[:200],
+        body=payload.body,
+        status="sent",
+        direction="sent",
+        received_at=datetime.now(UTC),
+    )
+    session.add(sent_msg)
+    await session.commit()
+    await session.refresh(sent_msg)
+    return sent_msg
 
 
 @router.patch("/{email_id}", response_model=EmailMessageRead)

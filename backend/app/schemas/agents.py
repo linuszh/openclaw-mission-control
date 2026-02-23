@@ -301,7 +301,10 @@ class AgentSyncResponse(SQLModel):
 
     model_config = SQLModelConfig(
         json_schema_extra={
-            "description": "Fields pulled live from the OpenClaw gateway.",
+            "x-llm-intent": "Read the synced agent config fields after a gateway sync operation.",
+            "x-when-to-use": "Returned by POST /agents/{id}/sync-from-gateway. Check synced_fields to see what changed.",
+            "x-required-actor": "org_admin",
+            "description": "Fields pulled live from the OpenClaw gateway during sync.",
         }
     )
 

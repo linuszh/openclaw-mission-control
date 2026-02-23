@@ -6,8 +6,10 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi_pagination import Page
+from fastapi_pagination.limit_offset import LimitOffsetPage
 from sqlmodel import col, select
+
+from app.schemas.pagination import DefaultLimitOffsetPage
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import ORG_MEMBER_DEP, SESSION_DEP
@@ -80,7 +82,7 @@ async def delete_account(
     await session.commit()
 
 
-@router.get("/", response_model=Page[EmailMessageRead])
+@router.get("/", response_model=DefaultLimitOffsetPage[EmailMessageRead])
 async def list_emails(
     ctx: OrganizationContext = ORG_MEMBER_DEP,
     session: AsyncSession = SESSION_DEP,

@@ -95,21 +95,30 @@ async def sync_single_account(session: Any, account: EmailAccount) -> None:
 
 
 async def _notify_gatekeeper_on_new_email(session: Any, email_message: EmailMessage) -> None:
-    """Relay a new email summary to the 'Gatekeeper' (main agent)."""
-    gatekeeper = await Agent.objects.by_id("main").first(session)
+    """Relay a new email summary to the board lead acting as gatekeeper."""
+    from app.models.boards import Board
+    from sqlmodel import col
+
+    # Find any board lead with an active session in this organization.
+    board_result = await session.exec(
+        select(Board).where(Board.organization_id == email_message.organization_id)
+    )
+    board = board_result.first()
+    if not board:
+        return
+
+    gatekeeper_result = await session.exec(
+        select(Agent).where(
+            col(Agent.board_id) == board.id,
+            col(Agent.is_board_lead).is_(True),
+            col(Agent.openclaw_session_id).isnot(None),
+        )
+    )
+    gatekeeper = gatekeeper_result.first()
     if not gatekeeper or not gatekeeper.openclaw_session_id:
         return
 
     dispatch = GatewayDispatchService(session)
-    # Since we are at the organization level, we need to pick a board
-    # to find a valid gateway config. We'll pick the first board we find.
-    from app.models.boards import Board
-    board = await session.exec(
-        select(Board).where(Board.organization_id == email_message.organization_id)
-    )
-    board = board.first()
-    if not board:
-        return
 
     config = await dispatch.optional_gateway_config_for_board(board)
     if not config:

@@ -39,6 +39,7 @@ from app.services.approval_task_links import (
     task_counts_for_board,
 )
 from app.services.openclaw.gateway_dispatch import GatewayDispatchService
+from app.services.telegram.service import TelegramService
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
@@ -426,6 +427,15 @@ async def create_approval(
     await session.commit()
     await session.refresh(approval)
     title_by_id = await _task_titles_by_id(session, task_ids=set(task_ids))
+
+    if approval.status == "pending":
+        telegram = TelegramService()
+        await telegram.send_approval_request(
+            board=board,
+            approval=approval,
+            task_titles=[title_by_id[task_id] for task_id in task_ids if task_id in title_by_id],
+        )
+
     return _approval_to_read(
         approval,
         task_ids=task_ids,

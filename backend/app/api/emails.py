@@ -114,6 +114,11 @@ async def update_email(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Email message not found",
         )
+    if email_msg.status == "deleted":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
     email_msg.status = payload.status
     session.add(email_msg)
     await session.commit()
@@ -127,7 +132,7 @@ async def delete_email(
     ctx: OrganizationContext = ORG_MEMBER_DEP,
     session: AsyncSession = SESSION_DEP,
 ) -> None:
-    """Permanently delete a single email message."""
+    """Soft-delete a single email message (sets status to 'deleted', preserving IMAP UID tracking)."""
     email_msg = await session.get(EmailMessage, email_id)
     if not email_msg or email_msg.organization_id != ctx.organization.id:
         raise HTTPException(
@@ -163,6 +168,11 @@ async def get_email(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Email message not found",
         )
+    if email_msg.status == "deleted":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
     return email_msg
 
 
@@ -176,6 +186,11 @@ async def convert_email_to_task(
     """Convert a synced email into a task on the specified board."""
     email_msg = await session.get(EmailMessage, email_id)
     if not email_msg or email_msg.organization_id != ctx.organization.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
+    if email_msg.status == "deleted":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Email message not found",
@@ -225,6 +240,11 @@ async def summarize_email(
     """Dispatch an AI summary request for an email to the Gatekeeper agent."""
     email_msg = await session.get(EmailMessage, email_id)
     if not email_msg or email_msg.organization_id != ctx.organization.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email message not found",
+        )
+    if email_msg.status == "deleted":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Email message not found",

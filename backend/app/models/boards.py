@@ -45,6 +45,7 @@ class Board(TenantScoped, table=True):
     only_lead_can_change_status: bool = Field(default=False)
     max_agents: int = Field(default=1)
     default_model: str | None = None
+    notification_channel: str | None = Field(default=None)  # "telegram" | "discord" | "both"
     # Product Architecture & Project Context
     project_context: str | None = Field(default=None)
     claude_context: str | None = Field(default=None)

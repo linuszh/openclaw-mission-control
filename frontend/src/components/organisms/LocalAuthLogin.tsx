@@ -11,11 +11,7 @@ import { Input } from "@/components/ui/input";
 const LOCAL_AUTH_TOKEN_MIN_LENGTH = 50;
 
 async function validateLocalToken(token: string): Promise<string | null> {
-  const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!rawBaseUrl) {
-    return "NEXT_PUBLIC_API_URL is not set.";
-  }
-
+  const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
   const baseUrl = rawBaseUrl.replace(/\/+$/, "");
 
   let response: Response;

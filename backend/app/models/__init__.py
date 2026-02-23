@@ -4,6 +4,7 @@ from app.models.activity_events import ActivityEvent
 from app.models.agents import Agent
 from app.models.approval_task_links import ApprovalTaskLink
 from app.models.approvals import Approval
+from app.models.email import EmailAccount, EmailMessage
 from app.models.board_group_memory import BoardGroupMemory
 from app.models.board_groups import BoardGroup
 from app.models.board_memory import BoardMemory
@@ -35,6 +36,8 @@ __all__ = [
     "Agent",
     "ApprovalTaskLink",
     "Approval",
+    "EmailAccount",
+    "EmailMessage",
     "BoardGroupMemory",
     "BoardWebhook",
     "BoardWebhookPayload",

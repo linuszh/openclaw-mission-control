@@ -92,6 +92,7 @@ export * from "./dashboardWipRangeSeriesBucket";
 export * from "./dashboardWipRangeSeriesRange";
 export * from "./dashboardWipSeriesSet";
 export * from "./discoverGatewayAgentsApiV1GatewaysGatewayIdAgentsDiscoverGet200";
+export * from "./emailAccountCreate";
 export * from "./emailAccountRead";
 export * from "./emailMessageRead";
 export * from "./gatewayCommandsResponse";

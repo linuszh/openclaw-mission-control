@@ -1,0 +1,13 @@
+[Unit]
+Description=Mission Control RQ Worker
+After=mc-backend.service
+
+[Service]
+WorkingDirectory=/home/linus/openclaw-mission-control/backend
+ExecStart=/home/linus/.local/bin/uv run python ../scripts/rq worker
+Restart=always
+RestartSec=5
+EnvironmentFile=/home/linus/openclaw-mission-control/backend/.env
+
+[Install]
+WantedBy=default.target

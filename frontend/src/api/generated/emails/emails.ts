@@ -4,20 +4,24 @@
  * Mission Control API
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
 import type {
+  EmailAccountCreate,
   EmailAccountRead,
   EmailMessageRead,
   HTTPValidationError,
@@ -29,6 +33,427 @@ import { customFetch } from "../../mutator";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * List all email sync accounts for the current organization.
+ * @summary List Accounts
+ */
+export type listAccountsApiV1EmailsAccountsGetResponse200 = {
+  data: EmailAccountRead[];
+  status: 200;
+};
+
+export type listAccountsApiV1EmailsAccountsGetResponseSuccess =
+  listAccountsApiV1EmailsAccountsGetResponse200 & {
+    headers: Headers;
+  };
+export type listAccountsApiV1EmailsAccountsGetResponse =
+  listAccountsApiV1EmailsAccountsGetResponseSuccess;
+
+export const getListAccountsApiV1EmailsAccountsGetUrl = () => {
+  return `/api/v1/emails/accounts`;
+};
+
+export const listAccountsApiV1EmailsAccountsGet = async (
+  options?: RequestInit,
+): Promise<listAccountsApiV1EmailsAccountsGetResponse> => {
+  return customFetch<listAccountsApiV1EmailsAccountsGetResponse>(
+    getListAccountsApiV1EmailsAccountsGetUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListAccountsApiV1EmailsAccountsGetQueryKey = () => {
+  return [`/api/v1/emails/accounts`] as const;
+};
+
+export const getListAccountsApiV1EmailsAccountsGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+      TError,
+      TData
+    >
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListAccountsApiV1EmailsAccountsGetQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
+  > = ({ signal }) =>
+    listAccountsApiV1EmailsAccountsGet({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListAccountsApiV1EmailsAccountsGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
+>;
+export type ListAccountsApiV1EmailsAccountsGetQueryError = unknown;
+
+export function useListAccountsApiV1EmailsAccountsGet<
+  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListAccountsApiV1EmailsAccountsGet<
+  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListAccountsApiV1EmailsAccountsGet<
+  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary List Accounts
+ */
+
+export function useListAccountsApiV1EmailsAccountsGet<
+  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getListAccountsApiV1EmailsAccountsGetQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Create a new email sync account.
+ * @summary Create Account
+ */
+export type createAccountApiV1EmailsAccountsPostResponse200 = {
+  data: EmailAccountRead;
+  status: 200;
+};
+
+export type createAccountApiV1EmailsAccountsPostResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type createAccountApiV1EmailsAccountsPostResponseSuccess =
+  createAccountApiV1EmailsAccountsPostResponse200 & {
+    headers: Headers;
+  };
+export type createAccountApiV1EmailsAccountsPostResponseError =
+  createAccountApiV1EmailsAccountsPostResponse422 & {
+    headers: Headers;
+  };
+
+export type createAccountApiV1EmailsAccountsPostResponse =
+  | createAccountApiV1EmailsAccountsPostResponseSuccess
+  | createAccountApiV1EmailsAccountsPostResponseError;
+
+export const getCreateAccountApiV1EmailsAccountsPostUrl = () => {
+  return `/api/v1/emails/accounts`;
+};
+
+export const createAccountApiV1EmailsAccountsPost = async (
+  emailAccountCreate: EmailAccountCreate,
+  options?: RequestInit,
+): Promise<createAccountApiV1EmailsAccountsPostResponse> => {
+  return customFetch<createAccountApiV1EmailsAccountsPostResponse>(
+    getCreateAccountApiV1EmailsAccountsPostUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(emailAccountCreate),
+    },
+  );
+};
+
+export const getCreateAccountApiV1EmailsAccountsPostMutationOptions = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAccountApiV1EmailsAccountsPost>>,
+    TError,
+    { data: EmailAccountCreate },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAccountApiV1EmailsAccountsPost>>,
+  TError,
+  { data: EmailAccountCreate },
+  TContext
+> => {
+  const mutationKey = ["createAccountApiV1EmailsAccountsPost"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAccountApiV1EmailsAccountsPost>>,
+    { data: EmailAccountCreate }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createAccountApiV1EmailsAccountsPost(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAccountApiV1EmailsAccountsPostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAccountApiV1EmailsAccountsPost>>
+>;
+export type CreateAccountApiV1EmailsAccountsPostMutationBody =
+  EmailAccountCreate;
+export type CreateAccountApiV1EmailsAccountsPostMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Create Account
+ */
+export const useCreateAccountApiV1EmailsAccountsPost = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createAccountApiV1EmailsAccountsPost>>,
+      TError,
+      { data: EmailAccountCreate },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createAccountApiV1EmailsAccountsPost>>,
+  TError,
+  { data: EmailAccountCreate },
+  TContext
+> => {
+  return useMutation(
+    getCreateAccountApiV1EmailsAccountsPostMutationOptions(options),
+    queryClient,
+  );
+};
+/**
+ * Delete an email sync account and all its synced messages.
+ * @summary Delete Account
+ */
+export type deleteAccountApiV1EmailsAccountsAccountIdDeleteResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteAccountApiV1EmailsAccountsAccountIdDeleteResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type deleteAccountApiV1EmailsAccountsAccountIdDeleteResponseSuccess =
+  deleteAccountApiV1EmailsAccountsAccountIdDeleteResponse204 & {
+    headers: Headers;
+  };
+export type deleteAccountApiV1EmailsAccountsAccountIdDeleteResponseError =
+  deleteAccountApiV1EmailsAccountsAccountIdDeleteResponse422 & {
+    headers: Headers;
+  };
+
+export type deleteAccountApiV1EmailsAccountsAccountIdDeleteResponse =
+  | deleteAccountApiV1EmailsAccountsAccountIdDeleteResponseSuccess
+  | deleteAccountApiV1EmailsAccountsAccountIdDeleteResponseError;
+
+export const getDeleteAccountApiV1EmailsAccountsAccountIdDeleteUrl = (
+  accountId: string,
+) => {
+  return `/api/v1/emails/accounts/${accountId}`;
+};
+
+export const deleteAccountApiV1EmailsAccountsAccountIdDelete = async (
+  accountId: string,
+  options?: RequestInit,
+): Promise<deleteAccountApiV1EmailsAccountsAccountIdDeleteResponse> => {
+  return customFetch<deleteAccountApiV1EmailsAccountsAccountIdDeleteResponse>(
+    getDeleteAccountApiV1EmailsAccountsAccountIdDeleteUrl(accountId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeleteAccountApiV1EmailsAccountsAccountIdDeleteMutationOptions =
+  <TError = HTTPValidationError, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof deleteAccountApiV1EmailsAccountsAccountIdDelete>
+      >,
+      TError,
+      { accountId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  }): UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAccountApiV1EmailsAccountsAccountIdDelete>>,
+    TError,
+    { accountId: string },
+    TContext
+  > => {
+    const mutationKey = ["deleteAccountApiV1EmailsAccountsAccountIdDelete"];
+    const { mutation: mutationOptions, request: requestOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey }, request: undefined };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof deleteAccountApiV1EmailsAccountsAccountIdDelete>
+      >,
+      { accountId: string }
+    > = (props) => {
+      const { accountId } = props ?? {};
+
+      return deleteAccountApiV1EmailsAccountsAccountIdDelete(
+        accountId,
+        requestOptions,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type DeleteAccountApiV1EmailsAccountsAccountIdDeleteMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof deleteAccountApiV1EmailsAccountsAccountIdDelete>>
+  >;
+
+export type DeleteAccountApiV1EmailsAccountsAccountIdDeleteMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Delete Account
+ */
+export const useDeleteAccountApiV1EmailsAccountsAccountIdDelete = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof deleteAccountApiV1EmailsAccountsAccountIdDelete>
+      >,
+      TError,
+      { accountId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof deleteAccountApiV1EmailsAccountsAccountIdDelete>>,
+  TError,
+  { accountId: string },
+  TContext
+> => {
+  return useMutation(
+    getDeleteAccountApiV1EmailsAccountsAccountIdDeleteMutationOptions(options),
+    queryClient,
+  );
+};
 /**
  * List all synced emails for the current organization.
  * @summary List Emails
@@ -428,180 +853,6 @@ export function useGetEmailApiV1EmailsEmailIdGet<
     emailId,
     options,
   );
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * List all email sync accounts for the current organization.
- * @summary List Accounts
- */
-export type listAccountsApiV1EmailsAccountsGetResponse200 = {
-  data: EmailAccountRead[];
-  status: 200;
-};
-
-export type listAccountsApiV1EmailsAccountsGetResponseSuccess =
-  listAccountsApiV1EmailsAccountsGetResponse200 & {
-    headers: Headers;
-  };
-export type listAccountsApiV1EmailsAccountsGetResponse =
-  listAccountsApiV1EmailsAccountsGetResponseSuccess;
-
-export const getListAccountsApiV1EmailsAccountsGetUrl = () => {
-  return `/api/v1/emails/accounts`;
-};
-
-export const listAccountsApiV1EmailsAccountsGet = async (
-  options?: RequestInit,
-): Promise<listAccountsApiV1EmailsAccountsGetResponse> => {
-  return customFetch<listAccountsApiV1EmailsAccountsGetResponse>(
-    getListAccountsApiV1EmailsAccountsGetUrl(),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-export const getListAccountsApiV1EmailsAccountsGetQueryKey = () => {
-  return [`/api/v1/emails/accounts`] as const;
-};
-
-export const getListAccountsApiV1EmailsAccountsGetQueryOptions = <
-  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-  TError = unknown,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-      TError,
-      TData
-    >
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getListAccountsApiV1EmailsAccountsGetQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
-  > = ({ signal }) =>
-    listAccountsApiV1EmailsAccountsGet({ signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type ListAccountsApiV1EmailsAccountsGetQueryResult = NonNullable<
-  Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
->;
-export type ListAccountsApiV1EmailsAccountsGetQueryError = unknown;
-
-export function useListAccountsApiV1EmailsAccountsGet<
-  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-  TError = unknown,
->(
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-          TError,
-          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
-        >,
-        "initialData"
-      >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useListAccountsApiV1EmailsAccountsGet<
-  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-          TError,
-          Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>
-        >,
-        "initialData"
-      >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useListAccountsApiV1EmailsAccountsGet<
-  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-/**
- * @summary List Accounts
- */
-
-export function useListAccountsApiV1EmailsAccountsGet<
-  TData = Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof listAccountsApiV1EmailsAccountsGet>>,
-        TError,
-        TData
-      >
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions =
-    getListAccountsApiV1EmailsAccountsGetQueryOptions(options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

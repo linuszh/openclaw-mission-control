@@ -29,6 +29,8 @@ _OPENAPI_EXAMPLE_TAGS = {
     "custom-fields",
     "tags",
     "users",
+    "bot",
+    "emails",
 }
 _GENERIC_RESPONSE_DESCRIPTIONS = {"Successful Response", "Validation Error"}
 _HTTP_RESPONSE_DESCRIPTIONS = {

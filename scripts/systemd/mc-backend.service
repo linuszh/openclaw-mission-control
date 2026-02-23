@@ -1,0 +1,14 @@
+[Unit]
+Description=Mission Control Backend
+After=mc-db.service
+
+[Service]
+WorkingDirectory=/home/linus/openclaw-mission-control/backend
+ExecStart=/home/linus/.local/bin/uv run uvicorn app.main:app --port 8000 --host 0.0.0.0
+Restart=always
+RestartSec=5
+# Load environment from .env file
+EnvironmentFile=/home/linus/openclaw-mission-control/backend/.env
+
+[Install]
+WantedBy=default.target

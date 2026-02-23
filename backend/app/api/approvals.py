@@ -39,7 +39,6 @@ from app.services.approval_task_links import (
     task_counts_for_board,
 )
 from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.telegram.service import TelegramService
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
@@ -279,6 +278,49 @@ async def _notify_lead_on_approval_resolution(
     await session.commit()
 
 
+async def _notify_gatekeeper_on_pending_approval(
+    *,
+    session: AsyncSession,
+    board: Board,
+    approval: Approval,
+    task_titles: list[str],
+) -> None:
+    """Relay approval requests through the 'Gatekeeper' (main agent)."""
+    # The 'Gatekeeper' agent is identified by its ID 'main' or can be fetched
+    # using organization/gateway scoped filters if needed.
+    gatekeeper = await Agent.objects.by_id("main").first(session)
+    if gatekeeper is None or not gatekeeper.openclaw_session_id:
+        # Fallback to current board lead if Gatekeeper is unavailable
+        gatekeeper = await _resolve_board_lead(session, board_id=board.id)
+
+    if gatekeeper is None or not gatekeeper.openclaw_session_id:
+        return
+
+    dispatch = GatewayDispatchService(session)
+    config = await dispatch.optional_gateway_config_for_board(board)
+    if config is None:
+        return
+
+    task_info = f"\nTasks: {', '.join(task_titles)}" if task_titles else ""
+    message = (
+        f"🚨 APPROVAL REQUESTED\n\n"
+        f"Board: {board.name}\n"
+        f"Approval ID: {approval.id}\n"
+        f"Action: {approval.action_type}\n"
+        f"Confidence: {approval.confidence}{task_info}\n\n"
+        f"Payload:\n{approval.payload}\n\n"
+        f"Instruction: Linus, please approve or reject this request. Respond to me directly."
+    )
+
+    await dispatch.try_send_agent_message(
+        session_key=gatekeeper.openclaw_session_id,
+        config=config,
+        agent_name=gatekeeper.name,
+        message=message,
+        deliver=False,
+    )
+
+
 async def _fetch_approval_events(
     session: AsyncSession,
     board_id: UUID,
@@ -429,8 +471,8 @@ async def create_approval(
     title_by_id = await _task_titles_by_id(session, task_ids=set(task_ids))
 
     if approval.status == "pending":
-        telegram = TelegramService()
-        await telegram.send_approval_request(
+        await _notify_gatekeeper_on_pending_approval(
+            session=session,
             board=board,
             approval=approval,
             task_titles=[title_by_id[task_id] for task_id in task_ids if task_id in title_by_id],

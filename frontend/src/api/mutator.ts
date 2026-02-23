@@ -39,9 +39,11 @@ export const customFetch = async <T>(
   url: string,
   options: RequestInit,
 ): Promise<T> => {
-  const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!rawBaseUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is not set.");
+  let rawBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+  if (typeof window === "undefined" && !rawBaseUrl) {
+    // During SSR, if NEXT_PUBLIC_API_URL is empty (relying on client proxy),
+    // fetch requires an absolute URL. We point it directly to the local backend.
+    rawBaseUrl = "http://127.0.0.1:8000";
   }
   const baseUrl = rawBaseUrl.replace(/\/+$/, "");
 
@@ -67,6 +69,10 @@ export const customFetch = async <T>(
     ...options,
     headers,
   });
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[API] ${options.method || "GET"} ${baseUrl}${url} -> ${response.status}`);
+  }
 
   if (!response.ok) {
     const contentType = response.headers.get("content-type") ?? "";

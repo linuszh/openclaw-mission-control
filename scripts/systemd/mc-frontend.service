@@ -1,0 +1,14 @@
+[Unit]
+Description=Mission Control Frontend
+After=mc-backend.service
+
+[Service]
+WorkingDirectory=/home/linus/openclaw-mission-control/frontend
+ExecStart=/usr/bin/bash /home/linus/openclaw-mission-control/scripts/with_node.sh npm run dev -- --hostname 0.0.0.0 --port 3332
+Restart=always
+RestartSec=10
+# Load environment from .env file
+EnvironmentFile=/home/linus/openclaw-mission-control/frontend/.env
+
+[Install]
+WantedBy=default.target

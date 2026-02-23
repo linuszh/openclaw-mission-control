@@ -17,6 +17,9 @@ class EmailAccountCreate(BaseModel):
     imap_username: str
     imap_password: str
     use_ssl: bool = True
+    smtp_server: str = ""
+    smtp_port: int = 587
+    smtp_use_ssl: bool = True
 
 
 class EmailAccountUpdate(BaseModel):
@@ -39,6 +42,9 @@ class EmailAccountRead(BaseModel):
     imap_server: str
     imap_port: int
     use_ssl: bool
+    smtp_server: str
+    smtp_port: int
+    smtp_use_ssl: bool
     created_at: datetime
     updated_at: datetime
 
@@ -75,6 +81,15 @@ class EmailMessageRead(BaseModel):
     snippet: str | None
     body: str | None
     status: str
+    direction: str
     received_at: datetime
     created_at: datetime
     updated_at: datetime
+
+
+class EmailSendRequest(BaseModel):
+    """Payload for agents to send an outbound email."""
+
+    to: str
+    subject: str
+    body: str

@@ -18,6 +18,7 @@ export interface EmailMessageRead {
   snippet: string | null;
   body: string | null;
   status: string;
+  direction: string;
   received_at: string;
   created_at: string;
   updated_at: string;

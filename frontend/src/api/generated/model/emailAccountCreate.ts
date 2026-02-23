@@ -15,4 +15,7 @@ export interface EmailAccountCreate {
   imap_username: string;
   imap_password: string;
   use_ssl?: boolean;
+  smtp_server?: string;
+  smtp_port?: number;
+  smtp_use_ssl?: boolean;
 }

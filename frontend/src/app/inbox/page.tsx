@@ -15,6 +15,7 @@ import {
   Clock,
   Loader2,
   Mail,
+  Send,
   Sparkles,
   Trash2,
   XCircle,
@@ -28,6 +29,7 @@ import {
 import { useListBoardsApiV1BoardsGet } from "@/api/generated/boards/boards";
 import {
   useListEmailsApiV1EmailsGet,
+  useListSentEmailsApiV1EmailsSentGet,
   useConvertEmailToTaskApiV1EmailsEmailIdConvertPost,
   useDeleteEmailApiV1EmailsEmailIdDelete,
   useSummarizeEmailApiV1EmailsEmailIdSummarizePost,
@@ -501,13 +503,63 @@ function EmailTab({ boards }: { boards: BoardRead[] }) {
   );
 }
 
+// ─── Sent tab ─────────────────────────────────────────────────────────────────
+
+function SentTab() {
+  const { data, isLoading } = useListSentEmailsApiV1EmailsSentGet({ limit: 50, offset: 0 });
+  const emails = data?.status === 200 ? (data.data.items ?? []) : [];
+
+  if (isLoading)
+    return <div className="py-12 text-center text-sm text-slate-400">Loading…</div>;
+
+  if (emails.length === 0)
+    return (
+      <div className="flex flex-col items-center py-16 text-slate-400">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+          <Send className="h-5 w-5" />
+        </div>
+        <p className="font-medium text-slate-600">No sent emails yet</p>
+        <p className="mt-1 text-sm">Emails sent by your agents appear here.</p>
+      </div>
+    );
+
+  return (
+    <div className="divide-y divide-slate-100">
+      {emails.map((email) => (
+        <div
+          key={email.id}
+          className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50"
+        >
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50">
+            <Send className="h-3.5 w-3.5 text-blue-500" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="truncate text-sm font-medium text-slate-800">
+                {email.subject}
+              </p>
+              <span className="shrink-0 text-xs text-slate-400">
+                {new Date(email.received_at).toLocaleDateString()}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">From: {email.sender}</p>
+            {email.snippet && (
+              <p className="mt-0.5 truncate text-xs text-slate-400">{email.snippet}</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Inner page (signed in) ───────────────────────────────────────────────────
 
 function InboxInner() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") ?? "all";
   const [activeTab, setActiveTab] = useState(
-    ["all", "approvals", "email"].includes(initialTab) ? initialTab : "all",
+    ["all", "approvals", "email", "sent"].includes(initialTab) ? initialTab : "all",
   );
 
   const { isSignedIn } = useAuth();
@@ -633,6 +685,9 @@ function InboxInner() {
               ) : null}
             </TabsTrigger>
             <TabsTrigger value="email" className="rounded-full px-4 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Email</TabsTrigger>
+            <TabsTrigger value="sent" className="rounded-full px-4 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Sent
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
@@ -661,6 +716,10 @@ function InboxInner() {
 
           <TabsContent value="email">
             <EmailTab boards={boards} />
+          </TabsContent>
+
+          <TabsContent value="sent">
+            <SentTab />
           </TabsContent>
         </Tabs>
       </div>

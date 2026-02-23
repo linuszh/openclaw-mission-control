@@ -25,11 +25,13 @@ import type {
   EmailAccountRead,
   EmailConvertRequest,
   EmailMessageRead,
+  EmailSendRequest,
   EmailSummarizeResponse,
   EmailUpdateRequest,
   HTTPValidationError,
   LimitOffsetPageTypeVarCustomizedEmailMessageRead,
   ListEmailsApiV1EmailsGetParams,
+  ListSentEmailsApiV1EmailsSentGetParams,
   TaskRead,
 } from ".././model";
 
@@ -667,6 +669,336 @@ export function useListEmailsApiV1EmailsGet<
 }
 
 /**
+ * List all emails sent by agents for the current organization.
+ * @summary List Sent Emails
+ */
+export type listSentEmailsApiV1EmailsSentGetResponse200 = {
+  data: LimitOffsetPageTypeVarCustomizedEmailMessageRead;
+  status: 200;
+};
+
+export type listSentEmailsApiV1EmailsSentGetResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type listSentEmailsApiV1EmailsSentGetResponseSuccess =
+  listSentEmailsApiV1EmailsSentGetResponse200 & {
+    headers: Headers;
+  };
+export type listSentEmailsApiV1EmailsSentGetResponseError =
+  listSentEmailsApiV1EmailsSentGetResponse422 & {
+    headers: Headers;
+  };
+
+export type listSentEmailsApiV1EmailsSentGetResponse =
+  | listSentEmailsApiV1EmailsSentGetResponseSuccess
+  | listSentEmailsApiV1EmailsSentGetResponseError;
+
+export const getListSentEmailsApiV1EmailsSentGetUrl = (
+  params?: ListSentEmailsApiV1EmailsSentGetParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/emails/sent?${stringifiedParams}`
+    : `/api/v1/emails/sent`;
+};
+
+export const listSentEmailsApiV1EmailsSentGet = async (
+  params?: ListSentEmailsApiV1EmailsSentGetParams,
+  options?: RequestInit,
+): Promise<listSentEmailsApiV1EmailsSentGetResponse> => {
+  return customFetch<listSentEmailsApiV1EmailsSentGetResponse>(
+    getListSentEmailsApiV1EmailsSentGetUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListSentEmailsApiV1EmailsSentGetQueryKey = (
+  params?: ListSentEmailsApiV1EmailsSentGetParams,
+) => {
+  return [`/api/v1/emails/sent`, ...(params ? [params] : [])] as const;
+};
+
+export const getListSentEmailsApiV1EmailsSentGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListSentEmailsApiV1EmailsSentGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getListSentEmailsApiV1EmailsSentGetQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>
+  > = ({ signal }) =>
+    listSentEmailsApiV1EmailsSentGet(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ListSentEmailsApiV1EmailsSentGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>
+>;
+export type ListSentEmailsApiV1EmailsSentGetQueryError = HTTPValidationError;
+
+export function useListSentEmailsApiV1EmailsSentGet<
+  TData = Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+  TError = HTTPValidationError,
+>(
+  params: undefined | ListSentEmailsApiV1EmailsSentGetParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+          TError,
+          Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListSentEmailsApiV1EmailsSentGet<
+  TData = Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListSentEmailsApiV1EmailsSentGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+          TError,
+          Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useListSentEmailsApiV1EmailsSentGet<
+  TData = Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListSentEmailsApiV1EmailsSentGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary List Sent Emails
+ */
+
+export function useListSentEmailsApiV1EmailsSentGet<
+  TData = Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+  TError = HTTPValidationError,
+>(
+  params?: ListSentEmailsApiV1EmailsSentGetParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listSentEmailsApiV1EmailsSentGet>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getListSentEmailsApiV1EmailsSentGetQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Send an outbound email from the org's first configured account and record it.
+ * @summary Send Email
+ */
+export type sendEmailApiV1EmailsSendPostResponse200 = {
+  data: EmailMessageRead;
+  status: 200;
+};
+
+export type sendEmailApiV1EmailsSendPostResponse422 = {
+  data: HTTPValidationError;
+  status: 422;
+};
+
+export type sendEmailApiV1EmailsSendPostResponseSuccess =
+  sendEmailApiV1EmailsSendPostResponse200 & {
+    headers: Headers;
+  };
+export type sendEmailApiV1EmailsSendPostResponseError =
+  sendEmailApiV1EmailsSendPostResponse422 & {
+    headers: Headers;
+  };
+
+export type sendEmailApiV1EmailsSendPostResponse =
+  | sendEmailApiV1EmailsSendPostResponseSuccess
+  | sendEmailApiV1EmailsSendPostResponseError;
+
+export const getSendEmailApiV1EmailsSendPostUrl = () => {
+  return `/api/v1/emails/send`;
+};
+
+export const sendEmailApiV1EmailsSendPost = async (
+  emailSendRequest: EmailSendRequest,
+  options?: RequestInit,
+): Promise<sendEmailApiV1EmailsSendPostResponse> => {
+  return customFetch<sendEmailApiV1EmailsSendPostResponse>(
+    getSendEmailApiV1EmailsSendPostUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(emailSendRequest),
+    },
+  );
+};
+
+export const getSendEmailApiV1EmailsSendPostMutationOptions = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendEmailApiV1EmailsSendPost>>,
+    TError,
+    { data: EmailSendRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendEmailApiV1EmailsSendPost>>,
+  TError,
+  { data: EmailSendRequest },
+  TContext
+> => {
+  const mutationKey = ["sendEmailApiV1EmailsSendPost"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendEmailApiV1EmailsSendPost>>,
+    { data: EmailSendRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sendEmailApiV1EmailsSendPost(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendEmailApiV1EmailsSendPostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendEmailApiV1EmailsSendPost>>
+>;
+export type SendEmailApiV1EmailsSendPostMutationBody = EmailSendRequest;
+export type SendEmailApiV1EmailsSendPostMutationError = HTTPValidationError;
+
+/**
+ * @summary Send Email
+ */
+export const useSendEmailApiV1EmailsSendPost = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof sendEmailApiV1EmailsSendPost>>,
+      TError,
+      { data: EmailSendRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof sendEmailApiV1EmailsSendPost>>,
+  TError,
+  { data: EmailSendRequest },
+  TContext
+> => {
+  return useMutation(
+    getSendEmailApiV1EmailsSendPostMutationOptions(options),
+    queryClient,
+  );
+};
+/**
  * Update an email message (e.g. archive it by setting status to 'archived').
  * @summary Update Email
  */
@@ -787,7 +1119,7 @@ export const useUpdateEmailApiV1EmailsEmailIdPatch = <
   );
 };
 /**
- * Permanently delete a single email message.
+ * Soft-delete a single email message (sets status to 'deleted', preserving IMAP UID tracking).
  * @summary Delete Email
  */
 export type deleteEmailApiV1EmailsEmailIdDeleteResponse204 = {

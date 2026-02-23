@@ -57,6 +57,7 @@ from app.services.approval_task_links import (
     pending_approval_conflicts_by_task,
 )
 from app.services.mentions import extract_mentions, matches_agent_mention
+from app.services.notifications import notify_task_status
 from app.services.openclaw.gateway_dispatch import GatewayDispatchService
 from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
 from app.services.openclaw.gateway_rpc import OpenClawGatewayError
@@ -2065,6 +2066,19 @@ async def _apply_lead_task_update(
     )
     await session.commit()
     await session.refresh(update.task)
+    # Board-level notification for done/blocked status changes
+    if (
+        update.task.status != update.previous_status
+        and update.task.status in ("done", "blocked")
+    ):
+        _board = await session.get(Board, update.board_id)
+        if _board and _board.notification_channel:
+            await notify_task_status(
+                board_name=_board.name,
+                task_title=update.task.title,
+                new_status=update.task.status,
+                channel=_board.notification_channel,
+            )
     await _lead_notify_new_assignee(session, update=update)
     return await _task_read_response(
         session,

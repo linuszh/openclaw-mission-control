@@ -11,12 +11,15 @@ from sqlalchemy import func
 from sqlmodel import col, select
 
 from app.api.deps import (
+    ActorContext,
     get_board_for_actor_read,
     get_board_for_user_read,
     get_board_for_user_write,
+    require_admin_or_agent,
     require_org_admin,
     require_org_member,
 )
+from app.core.auth import get_auth_context
 from app.core.logging import get_logger
 from app.core.time import utcnow
 from app.db import crud
@@ -26,7 +29,8 @@ from app.models.agents import Agent
 from app.models.board_groups import BoardGroup
 from app.models.boards import Board
 from app.models.gateways import Gateway
-from app.schemas.boards import BoardCreate, BoardRead, BoardUpdate
+from app.schemas.agents import AgentCreate, AgentRead
+from app.schemas.boards import AgentBulkProvisionRequest, BoardCreate, BoardRead, BoardUpdate, TemplateAgentCreate
 from app.schemas.common import OkResponse
 from app.schemas.pagination import DefaultLimitOffsetPage
 from app.schemas.view_models import BoardGroupSnapshot, BoardSnapshot
@@ -37,6 +41,7 @@ from app.services.board_snapshot import build_board_snapshot
 from app.services.openclaw.gateway_dispatch import GatewayDispatchService
 from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
 from app.services.openclaw.gateway_rpc import OpenClawGatewayError
+from app.services.openclaw.provisioning_db import AgentLifecycleService
 from app.services.organizations import OrganizationContext, board_access_filter
 
 if TYPE_CHECKING:
@@ -493,3 +498,55 @@ async def delete_board(
 ) -> OkResponse:
     """Delete a board and all dependent records."""
     return await delete_board_service(session, board=board)
+
+
+def _template_to_agent_create(
+    spec: TemplateAgentCreate,
+    board_id: UUID,
+) -> AgentCreate:
+    """Convert a template agent spec into a standard AgentCreate payload.
+
+    The ``model`` shorthand from the template is merged into ``identity_profile``
+    so that the gateway provisioning layer picks it up via the standard path.
+    """
+    identity_profile: dict[str, object] = dict(spec.identity_profile or {})
+    if spec.model:
+        identity_profile["model"] = spec.model
+    return AgentCreate(
+        board_id=board_id,
+        name=spec.name,
+        is_board_lead=spec.is_board_lead,
+        soul_template=spec.soul_template,
+        identity_profile=identity_profile or None,
+        heartbeat_config=spec.heartbeat_config,
+    )
+
+
+@router.post(
+    "/{board_id}/provision-agents",
+    response_model=list[AgentRead],
+    summary="Bulk-provision agents for a board",
+    description=(
+        "Creates all agents defined in the request body for the given board, "
+        "applying soul templates, identity profiles and heartbeat configs from "
+        "the board template. Intended to be called once after board creation."
+    ),
+)
+async def provision_board_agents(
+    board_id: str,
+    payload: AgentBulkProvisionRequest,
+    session: AsyncSession = SESSION_DEP,
+    actor: ActorContext = Depends(require_admin_or_agent),
+) -> list[AgentRead]:
+    """Provision all template agents for a board in declaration order."""
+    board = await Board.objects.by_id(board_id).first(session)
+    if board is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Board not found.")
+
+    service = AgentLifecycleService(session)
+    results: list[AgentRead] = []
+    for agent_spec in payload.agents:
+        agent_create = _template_to_agent_create(agent_spec, board.id)
+        agent_read = await service.create_agent(payload=agent_create, actor=actor)
+        results.append(agent_read)
+    return results

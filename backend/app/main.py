@@ -24,6 +24,7 @@ from app.api.boards import router as boards_router
 from app.api.bot import router as bot_router
 from app.api.gateway import router as gateway_router
 from app.api.gateways import router as gateways_router
+from app.api.github import router as github_router
 from app.api.metrics import router as metrics_router
 from app.api.organizations import router as organizations_router
 from app.api.skills_marketplace import router as skills_marketplace_router
@@ -69,6 +70,10 @@ OPENAPI_TAGS = [
     {
         "name": "gateways",
         "description": "Gateway management, synchronization, and runtime control operations.",
+    },
+    {
+        "name": "github",
+        "description": "GitHub integration endpoints for repository discovery via the gh CLI.",
     },
     {
         "name": "metrics",
@@ -272,6 +277,7 @@ api_v1.include_router(activity_router)
 api_v1.include_router(emails_router)
 api_v1.include_router(gateway_router)
 api_v1.include_router(gateways_router)
+api_v1.include_router(github_router)
 api_v1.include_router(metrics_router)
 api_v1.include_router(organizations_router)
 api_v1.include_router(souls_directory_router)

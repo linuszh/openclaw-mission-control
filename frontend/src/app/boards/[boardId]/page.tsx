@@ -741,6 +741,12 @@ LiveFeedCard.displayName = "LiveFeedCard";
 
 // ─── Setup agents banner ──────────────────────────────────────────────────────
 
+type ProvisionState =
+  | { status: "idle" }
+  | { status: "provisioning"; current: number; total: number }
+  | { status: "done" }
+  | { status: "error"; message: string };
+
 function SetupAgentsBanner({
   boardId,
   onDismiss,
@@ -757,7 +763,103 @@ function SetupAgentsBanner({
     }
   }, [boardId]);
 
-  const agentLinks = template?.agentRoster ?? [];
+  const [provisionState, setProvisionState] = useState<ProvisionState>({ status: "idle" });
+
+  const agentRoster = template?.agentRoster ?? [];
+  const isCodeFarm = Boolean(template?.requiresGithubRepo);
+
+  const handleProvision = useCallback(async () => {
+    if (!template || agentRoster.length === 0) return;
+    setProvisionState({ status: "provisioning", current: 0, total: agentRoster.length });
+
+    const agents = agentRoster.map((agent) => ({
+      name: agent.name,
+      model: agent.model || null,
+      is_board_lead: agent.isLead,
+      soul_template: agent.soulTemplate ?? null,
+      identity_profile: agent.identityProfile ?? null,
+      heartbeat_config: agent.heartbeatConfig ?? null,
+    }));
+
+    try {
+      // customFetch throws ApiError on non-2xx responses; success = provisioning done
+      await customFetch<unknown>(
+        `/api/v1/boards/${boardId}/provision-agents`,
+        {
+          method: "POST",
+          body: JSON.stringify({ agents }),
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      setProvisionState({ status: "done" });
+      // Clear template from localStorage after successful provisioning
+      try {
+        localStorage.removeItem(`board-template-${boardId}`);
+      } catch {
+        // ignore
+      }
+      setTimeout(onDismiss, 2000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error during provisioning.";
+      setProvisionState({ status: "error", message });
+    }
+  }, [template, agentRoster, boardId, onDismiss]);
+
+  // For Code Farm: show auto-provision button; for others: show create links
+  if (isCodeFarm) {
+    return (
+      <div className="mx-6 mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-emerald-900">
+              🌾 Code Farm board ready — provision your agent team.
+            </p>
+            <p className="mt-0.5 text-xs text-emerald-700">
+              {agentRoster.length} agents will be created:{" "}
+              {agentRoster.map((a) => a.name).join(", ")}.
+            </p>
+            {provisionState.status === "provisioning" ? (
+              <p className="mt-1 text-xs text-emerald-600 animate-pulse">
+                Provisioning {provisionState.current + 1}/{provisionState.total}…
+              </p>
+            ) : null}
+            {provisionState.status === "done" ? (
+              <p className="mt-1 text-xs text-emerald-600 font-medium">
+                ✅ All agents provisioned successfully.
+              </p>
+            ) : null}
+            {provisionState.status === "error" ? (
+              <p className="mt-1 text-xs text-red-600">{provisionState.message}</p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {provisionState.status === "idle" || provisionState.status === "error" ? (
+              <button
+                type="button"
+                onClick={handleProvision}
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                Provision agents
+              </button>
+            ) : null}
+            {provisionState.status === "provisioning" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                Working…
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="text-xs text-emerald-600 hover:text-emerald-800 hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-6 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
@@ -766,7 +868,7 @@ function SetupAgentsBanner({
         Next: provision your agents.
       </span>
       <div className="flex flex-wrap gap-2">
-        {agentLinks.map((agent) => (
+        {agentRoster.map((agent) => (
           <a
             key={agent.name}
             href={`/agents/new?boardId=${encodeURIComponent(boardId)}&name=${encodeURIComponent(agent.name)}&model=${encodeURIComponent(agent.model)}`}

@@ -26,6 +26,11 @@ class EmailAccount(TenantScoped, table=True):
     imap_password: str
     use_ssl: bool = Field(default=True)
 
+    # SMTP outbound (defaults to IMAP server if blank)
+    smtp_server: str = Field(default="")
+    smtp_port: int = Field(default=587)
+    smtp_use_ssl: bool = Field(default=True)
+
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 
@@ -45,6 +50,7 @@ class EmailMessage(TenantScoped, table=True):
     snippet: str | None = Field(default=None)
     body: str | None = Field(default=None)
     status: str = Field(default="unread", index=True)
+    direction: str = Field(default="received", index=True)  # "received" | "sent"
 
     received_at: datetime
     created_at: datetime = Field(default_factory=utcnow)

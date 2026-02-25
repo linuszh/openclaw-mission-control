@@ -8,6 +8,7 @@ DB-backed workflows (template sync, lead-agent record creation) live in
 from __future__ import annotations
 
 import json
+import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -588,17 +589,16 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         # HEARTBEAT.md and the gateway auto-nudge is a fallback only.  If config.patch
         # fails (rate limit or baseHash conflict from gateway's async auto-save), log and
         # continue — the workspace files have already been written successfully.
-        import asyncio as _asyncio_upsert
-        import logging as _logging
+        import asyncio
 
-        await _asyncio_upsert.sleep(1.5)
+        await asyncio.sleep(1.5)
         try:
             await self.patch_agent_heartbeats(
                 [(registration.agent_id, registration.workspace_path, registration.heartbeat)],
                 models=models,
             )
         except OpenClawGatewayError as _hb_exc:
-            _logging.getLogger(__name__).warning(
+            logging.getLogger(__name__).warning(
                 "gateway.heartbeat_patch.skipped agent_id=%s reason=%s",
                 registration.agent_id,
                 _hb_exc,
@@ -659,7 +659,7 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         entries: list[tuple[str, str, dict[str, Any]]],
         models: dict[str, str] | None = None,
     ) -> None:
-        import asyncio as _asyncio
+        import asyncio
 
         # Keep retries low to avoid exhausting the gateway's config.patch rate limit
         # (typically 1 call per ~57s). With 1.5s pre-call delay in upsert_agent the
@@ -686,7 +686,7 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
                 # "invalid config" is returned on baseHash mismatch (concurrent writes).
                 # Re-read the config and retry with a fresh hash.
                 if "invalid config" in str(exc).lower() and attempt < _MAX_RETRIES - 1:
-                    await _asyncio.sleep(_RETRY_DELAY * (attempt + 1))
+                    await asyncio.sleep(_RETRY_DELAY * (attempt + 1))
                     continue
                 raise
 
@@ -710,6 +710,22 @@ async def _gateway_config_agent_list(
         msg = "config agents.list is not a list"
         raise OpenClawGatewayError(msg)
     return cfg.get("hash"), agents_list, data
+
+
+async def get_agent_gateway_config(
+    agent_id: str,
+    *,
+    config: GatewayClientConfig,
+) -> dict[str, Any] | None:
+    """Return the gateway config entry for agent_id, or None if not found."""
+    _, agents_list, _ = await _gateway_config_agent_list(config)
+    for entry in agents_list:
+        if not isinstance(entry, dict):
+            continue
+        gw_id = entry.get("agentId") or entry.get("id")
+        if gw_id == agent_id:
+            return entry
+    return None
 
 
 def _heartbeat_entry_map(
@@ -1099,6 +1115,53 @@ def _wakeup_text(agent: Agent, *, verb: str) -> str:
     )
 
 
+async def _verify_agent_identity(
+    agent_gateway_id: str,
+    expected_workspace: str,
+    config: GatewayClientConfig,
+) -> bool:
+    """Confirm gateway agent identity matches before deletion.
+
+    Returns True if safe to delete, False if identity unconfirmed (skip gateway delete).
+    A 404 (already absent) is treated as True — nothing to delete.
+    """
+    logger = logging.getLogger(__name__)
+    try:
+        entry = await get_agent_gateway_config(agent_gateway_id, config=config)
+    except OpenClawGatewayError as exc:
+        logger.warning(
+            "gateway.delete.verify_failed agent_id=%s error=%s",
+            agent_gateway_id,
+            exc,
+        )
+        return False
+
+    if entry is None:
+        # Already gone from gateway
+        logger.info("gateway.delete.already_absent agent_id=%s", agent_gateway_id)
+        return True
+
+    gw_workspace = (entry.get("workspace") or "").rstrip("/")
+    exp_workspace = (expected_workspace or "").rstrip("/")
+
+    if not gw_workspace:
+        logger.warning(
+            "gateway.delete.verify_no_workspace agent_id=%s", agent_gateway_id
+        )
+        return False
+
+    if gw_workspace != exp_workspace:
+        logger.warning(
+            "gateway.delete.identity_mismatch agent_id=%s expected=%s got=%s",
+            agent_gateway_id,
+            exp_workspace,
+            gw_workspace,
+        )
+        return False
+
+    return True
+
+
 class OpenClawGatewayProvisioner:
     """Gateway-only agent lifecycle interface (create -> files -> wake)."""
 
@@ -1228,12 +1291,37 @@ class OpenClawGatewayProvisioner:
             agent_gateway_id = GatewayAgentIdentity.openclaw_agent_id(gateway)
         else:
             agent_gateway_id = _agent_key(agent)
-        try:
-            await control_plane.delete_agent(agent_gateway_id, delete_files=delete_files)
-        except OpenClawGatewayError as exc:
-            if not _is_missing_agent_error(exc):
-                raise
 
+        del_logger = logging.getLogger(__name__)
+        gw_config = GatewayClientConfig(
+            url=gateway.url,
+            token=gateway.token,
+            allow_insecure_tls=gateway.allow_insecure_tls,
+            disable_device_pairing=gateway.disable_device_pairing,
+        )
+        _safe = await _verify_agent_identity(
+            agent_gateway_id,
+            workspace_path or "",
+            gw_config,
+        )
+
+        if _safe:
+            try:
+                await control_plane.delete_agent(agent_gateway_id, delete_files=delete_files)
+            except OpenClawGatewayError as exc:
+                if not _is_missing_agent_error(exc):
+                    raise
+        else:
+            del_logger.warning(
+                "gateway.delete.skipped agent_id=%s reason=identity_unconfirmed workspace=%s",
+                agent_gateway_id,
+                workspace_path,
+            )
+
+        # Session deletion proceeds even when agent identity is uncertain (_safe=False).
+        # Session keys are deterministic from board_id/agent.id, making them tightly scoped
+        # to this specific agent — unlike the agent_gateway_id which could collide on name slugs.
+        # This is intentional: always clean up the session.
         if delete_session:
             if agent.board_id is None:
                 session_key = (

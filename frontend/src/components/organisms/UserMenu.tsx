@@ -10,6 +10,7 @@ import {
   Bot,
   Boxes,
   ChevronDown,
+  Inbox,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -153,7 +154,9 @@ export function UserMenu({
 
           {(
             [
-              { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+              { href: "/home", label: "Home", icon: LayoutDashboard },
+              { href: "/inbox", label: "Inbox", icon: Inbox },
+              { href: "/boards", label: "Projects", icon: Trello },
               { href: "/activity", label: "Activity", icon: Activity },
               { href: "/agents", label: "Agents", icon: Bot },
               { href: "/gateways", label: "Gateways", icon: Server },

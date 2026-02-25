@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
 
+    # Discord Integration
+    discord_bot_token: str = ""
+    discord_user_id: str = ""  # Discord user ID to DM
+
     # Default email account bootstrap (optional)
     default_email_address: str = ""
     default_email_password: str = ""

@@ -126,6 +126,11 @@ class AgentBase(SQLModel):
 class AgentCreate(AgentBase):
     """Payload for creating a new agent."""
 
+    is_board_lead: bool = Field(
+        default=False,
+        description="Whether this agent should be designated as the board lead.",
+    )
+
 
 class AgentUpdate(SQLModel):
     """Payload for patching an existing agent."""
@@ -294,6 +299,24 @@ class AgentHeartbeatCreate(AgentHeartbeat):
         description="Optional board context for bootstrap.",
         examples=["33333333-3333-3333-3333-333333333333"],
     )
+
+
+class AgentSyncResponse(SQLModel):
+    """Result of syncing an agent's config from the gateway."""
+
+    model_config = SQLModelConfig(
+        json_schema_extra={
+            "x-llm-intent": "Read the synced agent config fields after a gateway sync operation.",
+            "x-when-to-use": "Returned by POST /agents/{id}/sync-from-gateway. Check synced_fields to see what changed.",
+            "x-required-actor": "org_admin",
+            "description": "Fields pulled live from the OpenClaw gateway during sync.",
+        }
+    )
+
+    id: UUID
+    name: str
+    model: str | None = None
+    synced_fields: list[str] = Field(default_factory=list)
 
 
 class AgentNudge(SQLModel):

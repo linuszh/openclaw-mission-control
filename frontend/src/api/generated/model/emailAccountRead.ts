@@ -15,6 +15,9 @@ export interface EmailAccountRead {
   imap_server: string;
   imap_port: number;
   use_ssl: boolean;
+  smtp_server: string;
+  smtp_port: number;
+  smtp_use_ssl: boolean;
   created_at: string;
   updated_at: string;
 }

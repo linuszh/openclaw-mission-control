@@ -57,6 +57,7 @@ from app.services.approval_task_links import (
     pending_approval_conflicts_by_task,
 )
 from app.services.mentions import extract_mentions, matches_agent_mention
+from app.services.notifications import notify_task_status
 from app.services.openclaw.gateway_dispatch import GatewayDispatchService
 from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
 from app.services.openclaw.gateway_rpc import OpenClawGatewayError
@@ -83,15 +84,7 @@ if TYPE_CHECKING:
     from sqlmodel.ext.asyncio.session import AsyncSession
     from sqlmodel.sql.expression import SelectOfScalar
 
-from app.api.deps import (
-    ActorContext,
-    get_board_for_actor_read,
-    get_board_for_user_write,
-    get_task_or_404,
-    require_admin_auth,
-    require_admin_or_agent,
-    AuthContext,
-)
+from app.core.auth import AuthContext
 from app.models.users import User
 
 router = APIRouter(prefix="/boards/{board_id}/tasks", tags=["tasks"])
@@ -2108,6 +2101,19 @@ async def _apply_lead_task_update(
     )
     await session.commit()
     await session.refresh(update.task)
+    # Board-level notification for done/blocked status changes
+    if (
+        update.task.status != update.previous_status
+        and update.task.status in ("done", "blocked")
+    ):
+        _board = await session.get(Board, update.board_id)
+        if _board and _board.notification_channel:
+            await notify_task_status(
+                board_name=_board.name,
+                task_title=update.task.title,
+                new_status=update.task.status,
+                channel=_board.notification_channel,
+            )
     await _lead_notify_new_assignee(session, update=update)
     return await _task_read_response(
         session,
@@ -2448,6 +2454,19 @@ async def _finalize_updated_task(
     session.add(update.task)
     await session.commit()
     await session.refresh(update.task)
+    # Board-level notification for done/blocked status changes
+    if (
+        update.task.status != update.previous_status
+        and update.task.status in ("done", "blocked")
+    ):
+        _board = await session.get(Board, update.board_id)
+        if _board and _board.notification_channel:
+            await notify_task_status(
+                board_name=_board.name,
+                task_title=update.task.title,
+                new_status=update.task.status,
+                channel=_board.notification_channel,
+            )
     await _record_task_comment_from_update(session, update=update)
     await _record_task_update_activity(session, update=update)
     await _notify_task_update_assignment_changes(session, update=update)

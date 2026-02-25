@@ -28,4 +28,6 @@ export interface AgentCreate {
   identity_template?: string | null;
   /** Template representing deeper agent instructions. */
   soul_template?: string | null;
+  /** Whether this agent should be designated as the board lead. */
+  is_board_lead?: boolean;
 }

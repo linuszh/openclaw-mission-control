@@ -122,6 +122,7 @@ import {
 } from "@/lib/display-name";
 import { cn } from "@/lib/utils";
 import { usePageActive } from "@/hooks/usePageActive";
+import type { BoardTemplate } from "@/lib/board-templates";
 import {
   boardCustomFieldValues,
   canonicalizeCustomFieldValues,
@@ -738,6 +739,54 @@ const LiveFeedCard = memo(function LiveFeedCard({
 
 LiveFeedCard.displayName = "LiveFeedCard";
 
+// ─── Setup agents banner ──────────────────────────────────────────────────────
+
+function SetupAgentsBanner({
+  boardId,
+  onDismiss,
+}: {
+  boardId: string;
+  onDismiss: () => void;
+}) {
+  const template = useMemo<BoardTemplate | null>(() => {
+    try {
+      const raw = localStorage.getItem(`board-template-${boardId}`);
+      return raw ? (JSON.parse(raw) as BoardTemplate) : null;
+    } catch {
+      return null;
+    }
+  }, [boardId]);
+
+  const agentLinks = template?.agentRoster ?? [];
+
+  return (
+    <div className="mx-6 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+      <span className="text-sm font-medium text-blue-900">
+        {template ? `🚀 Your ${template.name} board is ready.` : "🚀 Board created."}{" "}
+        Next: provision your agents.
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {agentLinks.map((agent) => (
+          <a
+            key={agent.name}
+            href={`/agents/new?boardId=${encodeURIComponent(boardId)}&name=${encodeURIComponent(agent.name)}&model=${encodeURIComponent(agent.model)}&isLead=${agent.isLead}`}
+            className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+          >
+            Create {agent.name} →
+          </a>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="ml-auto text-xs text-blue-600 hover:text-blue-800 hover:underline"
+      >
+        Dismiss
+      </button>
+    </div>
+  );
+}
+
 export default function BoardDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -900,6 +949,7 @@ export default function BoardDetailPage() {
   const [deleteTaskError, setDeleteTaskError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"board" | "list">("board");
   const [isLiveFeedOpen, setIsLiveFeedOpen] = useState(false);
+  const [setupBannerDismissed, setSetupBannerDismissed] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const isLiveFeedOpenRef = useRef(false);
   const toastIdRef = useRef(0);
@@ -3162,6 +3212,14 @@ export default function BoardDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Setup agents banner */}
+          {searchParams.get("setupAgents") === "true" && !setupBannerDismissed && boardId ? (
+            <SetupAgentsBanner
+              boardId={boardId}
+              onDismiss={() => setSetupBannerDismissed(true)}
+            />
+          ) : null}
 
           <div className="relative flex gap-6 p-6">
             {isOrgAdmin ? (

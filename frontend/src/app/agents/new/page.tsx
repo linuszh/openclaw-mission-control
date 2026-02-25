@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/auth/clerk";
@@ -79,16 +79,22 @@ const normalizeIdentityProfile = (
 
 export default function NewAgentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn } = useAuth();
 
   const { isAdmin } = useOrganizationMembership(isSignedIn);
 
-  const [name, setName] = useState("");
-  const [boardId, setBoardId] = useState<string>("");
+  const prefillName = searchParams.get("name") ?? "";
+  const prefillModel = searchParams.get("model") ?? "";
+  const prefillBoardId = searchParams.get("boardId") ?? "";
+  const prefillIsLead = searchParams.get("isLead") === "true";
+
+  const [name, setName] = useState(prefillName);
+  const [boardId, setBoardId] = useState<string>(prefillBoardId);
   const [heartbeatEvery, setHeartbeatEvery] = useState("10m");
   const [identityProfile, setIdentityProfile] = useState<IdentityProfile>({
     ...DEFAULT_IDENTITY_PROFILE,
-    model: NO_MODEL_VALUE,
+    model: prefillModel !== "" ? prefillModel : NO_MODEL_VALUE,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -161,6 +167,7 @@ export default function NewAgentPage() {
       data: {
         name: trimmed,
         board_id: resolvedBoardId,
+        is_board_lead: prefillIsLead,
         heartbeat_config: {
           every: heartbeatEvery.trim() || "10m",
           target: "last",

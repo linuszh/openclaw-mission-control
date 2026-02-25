@@ -38,6 +38,7 @@ from app.services.approval_task_links import (
     replace_approval_task_links,
     task_counts_for_board,
 )
+from app.services.notifications import notify_approval
 from app.services.openclaw.gateway_dispatch import GatewayDispatchService
 
 if TYPE_CHECKING:
@@ -471,11 +472,20 @@ async def create_approval(
     title_by_id = await _task_titles_by_id(session, task_ids=set(task_ids))
 
     if approval.status == "pending":
+        task_titles = [title_by_id[task_id] for task_id in task_ids if task_id in title_by_id]
         await _notify_gatekeeper_on_pending_approval(
             session=session,
             board=board,
             approval=approval,
-            task_titles=[title_by_id[task_id] for task_id in task_ids if task_id in title_by_id],
+            task_titles=task_titles,
+        )
+        task_title = task_titles[0] if task_titles else "unknown task"
+        await notify_approval(
+            board_name=board.name,
+            task_title=task_title,
+            approval_id=str(approval.id),
+            action_type=approval.action_type or "approval",
+            channel=board.notification_channel,
         )
 
     return _approval_to_read(

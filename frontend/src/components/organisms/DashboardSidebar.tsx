@@ -4,34 +4,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
-  BarChart3,
-  Bot,
-  Boxes,
-  CheckCircle2,
-  Folder,
-  Building2,
-  LayoutGrid,
-  Network,
-  Settings,
-  Store,
-  Tags,
-  Sparkles,
+  Diamond,
   Inbox,
+  LayoutGrid,
+  Settings,
+  BarChart3,
 } from "lucide-react";
 
-import { useAuth } from "@/auth/clerk";
 import { ApiError } from "@/api/mutator";
-import { useOrganizationMembership } from "@/lib/use-organization-membership";
+import { useAuth, useUser } from "@/auth/clerk";
+import { isLocalAuthMode } from "@/auth/localAuth";
 import {
   type healthzHealthzGetResponse,
   useHealthzHealthzGet,
 } from "@/api/generated/default/default";
 import { cn } from "@/lib/utils";
+import { useInboxCount } from "@/lib/use-inbox-count";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
-  const { isAdmin } = useOrganizationMembership(isSignedIn);
+  const { user } = useUser();
+  const localMode = isLocalAuthMode();
+  const inboxCount = useInboxCount(isSignedIn);
+
   const healthQuery = useHealthzHealthzGet<healthzHealthzGetResponse, ApiError>(
     {
       query: {
@@ -54,249 +50,97 @@ export function DashboardSidebar() {
           : "unknown";
   const statusLabel =
     systemStatus === "operational"
-      ? "All systems operational"
+      ? "sys: OK"
       : systemStatus === "unknown"
-        ? "System status unavailable"
-        : "System degraded";
+        ? "sys: …"
+        : "sys: ERR";
+
+  const avatarLabel = localMode
+    ? "L"
+    : (user?.id?.slice(0, 1).toUpperCase() ?? "U");
+
+  const navItems = [
+    { href: "/home", label: "Home", icon: BarChart3, match: "/home" },
+    { href: "/inbox", label: "Inbox", icon: Inbox, match: "/inbox", count: inboxCount },
+    { href: "/boards", label: "Projects", icon: LayoutGrid, match: "/boards" },
+    { href: "/activity", label: "Activity", icon: Activity, match: "/activity" },
+    { href: "/settings", label: "Settings", icon: Settings, match: "/settings" },
+  ] as const;
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-slate-200 bg-white">
-      <div className="flex-1 px-3 py-4">
-        <p className="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Navigation
-        </p>
-        <nav className="mt-3 space-y-4 text-sm">
-          <div>
-            <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Overview
-            </p>
-            <div className="mt-1 space-y-1">
-              <Link
-                href="/dashboard"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname === "/dashboard"
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Dashboard
-              </Link>
-              <Link
-                href="/activity"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/activity")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <Activity className="h-4 w-4" />
-                Live feed
-              </Link>
-            </div>
-          </div>
+    <aside
+      className="hidden md:flex h-full w-64 shrink-0 flex-col border-r"
+      style={{
+        background: "var(--sidebar-bg)",
+        borderColor: "var(--sidebar-border)",
+      }}
+    >
+      {/* Logo lockup */}
+      <div className="flex items-center px-4 py-5">
+        <Diamond className="h-5 w-5 shrink-0 text-blue-500" />
+        <span className="ml-2 text-sm font-semibold tracking-tight text-[color:var(--sidebar-text-active)]">
+          OpenClaw
+        </span>
+      </div>
 
-          <div>
-            <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Assistant
-            </p>
-            <div className="mt-1 space-y-1">
-              <Link
-                href="/assistant"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/assistant")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
+      <div className="flex-1 px-3">
+        <nav className="space-y-0.5">
+          {navItems.map((item) => {
+            const isActive =
+              item.match === "/home"
+                ? pathname === "/home" || pathname === "/"
+                : pathname.startsWith(item.match);
+            return (
+              <div key={item.href} className="relative">
+                {isActive && (
+                  <span className="pointer-events-none absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-blue-500" />
                 )}
-              >
-                <Sparkles className="h-4 w-4" />
-                Personal Hub
-              </Link>
-              <Link
-                href="/assistant/inbox"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/assistant/inbox")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <Inbox className="h-4 w-4" />
-                Email Triage
-              </Link>
-            </div>
-          </div>
-
-          <div>
-            <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Projects
-            </p>
-            <div className="mt-1 space-y-1">
-              <Link
-                href="/board-groups"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/board-groups")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <Folder className="h-4 w-4" />
-                Project groups
-              </Link>
-              <Link
-                href="/boards"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/boards")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <LayoutGrid className="h-4 w-4" />
-                Projects
-              </Link>
-              <Link
-                href="/tags"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/tags")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <Tags className="h-4 w-4" />
-                Tags
-              </Link>
-              <Link
-                href="/approvals"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/approvals")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Approvals
-              </Link>
-              {isAdmin ? (
                 <Link
-                  href="/custom-fields"
+                  href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                    pathname.startsWith("/custom-fields")
-                      ? "bg-blue-100 text-blue-800 font-medium"
-                      : "hover:bg-slate-100",
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-[color:var(--sidebar-active-bg)] text-[color:var(--sidebar-text-active)]"
+                      : "text-[color:var(--sidebar-text)] hover:bg-[color:var(--sidebar-hover-bg)] hover:text-[color:var(--sidebar-text-active)]",
                   )}
                 >
-                  <Settings className="h-4 w-4" />
-                  Custom fields
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{item.label}</span>
+                  {"count" in item && item.count > 0 ? (
+                    <span
+                      className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white"
+                      style={{ background: "var(--sidebar-badge-bg)" }}
+                    >
+                      {item.count > 99 ? "99+" : item.count}
+                    </span>
+                  ) : null}
                 </Link>
-              ) : null}
-            </div>
-          </div>
-
-          <div>
-            {isAdmin ? (
-              <>
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  Skills
-                </p>
-                <div className="mt-1 space-y-1">
-                  <Link
-                    href="/skills/marketplace"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                      pathname === "/skills" ||
-                        pathname.startsWith("/skills/marketplace")
-                        ? "bg-blue-100 text-blue-800 font-medium"
-                        : "hover:bg-slate-100",
-                    )}
-                  >
-                    <Store className="h-4 w-4" />
-                    Marketplace
-                  </Link>
-                  <Link
-                    href="/skills/packs"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                      pathname.startsWith("/skills/packs")
-                        ? "bg-blue-100 text-blue-800 font-medium"
-                        : "hover:bg-slate-100",
-                    )}
-                  >
-                    <Boxes className="h-4 w-4" />
-                    Packs
-                  </Link>
-                </div>
-              </>
-            ) : null}
-          </div>
-
-          <div>
-            <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Administration
-            </p>
-            <div className="mt-1 space-y-1">
-              <Link
-                href="/organization"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                  pathname.startsWith("/organization")
-                    ? "bg-blue-100 text-blue-800 font-medium"
-                    : "hover:bg-slate-100",
-                )}
-              >
-                <Building2 className="h-4 w-4" />
-                Organization
-              </Link>
-              {isAdmin ? (
-                <Link
-                  href="/gateways"
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                    pathname.startsWith("/gateways")
-                      ? "bg-blue-100 text-blue-800 font-medium"
-                      : "hover:bg-slate-100",
-                  )}
-                >
-                  <Network className="h-4 w-4" />
-                  Gateways
-                </Link>
-              ) : null}
-              {isAdmin ? (
-                <Link
-                  href="/agents"
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition",
-                    pathname.startsWith("/agents")
-                      ? "bg-blue-100 text-blue-800 font-medium"
-                      : "hover:bg-slate-100",
-                  )}
-                >
-                  <Bot className="h-4 w-4" />
-                  Agents
-                </Link>
-              ) : null}
-            </div>
-          </div>
+              </div>
+            );
+          })}
         </nav>
       </div>
-      <div className="border-t border-slate-200 p-4">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+
+      <div
+        className="border-t p-4"
+        style={{ borderColor: "var(--sidebar-border)" }}
+      >
+        <div
+          className="flex items-center gap-2 text-xs"
+          style={{ color: "var(--sidebar-text)" }}
+        >
           <span
             className={cn(
-              "h-2 w-2 rounded-full",
+              "h-2 w-2 shrink-0 rounded-full",
               systemStatus === "operational" && "bg-emerald-500",
               systemStatus === "degraded" && "bg-rose-500",
-              systemStatus === "unknown" && "bg-slate-300",
+              systemStatus === "unknown" && "bg-slate-500",
             )}
           />
-          {statusLabel}
+          <span className="flex-1 truncate">{statusLabel}</span>
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-600 text-[10px] font-bold text-white">
+            {avatarLabel}
+          </span>
         </div>
       </div>
     </aside>

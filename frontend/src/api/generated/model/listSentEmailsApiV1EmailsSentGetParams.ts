@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListEmailsApiV1EmailsGetParams = {
+export type ListSentEmailsApiV1EmailsSentGetParams = {
   /**
    * @minimum 1
    * @maximum 200

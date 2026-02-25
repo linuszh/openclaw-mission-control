@@ -25,6 +25,7 @@ import type {
   AgentHeartbeat,
   AgentHeartbeatCreate,
   AgentRead,
+  AgentSyncResponse,
   AgentUpdate,
   HTTPValidationError,
   LimitOffsetPageTypeVarCustomizedAgentRead,
@@ -1051,6 +1052,155 @@ export const useDeleteAgentApiV1AgentsAgentIdDelete = <
 > => {
   return useMutation(
     getDeleteAgentApiV1AgentsAgentIdDeleteMutationOptions(options),
+    queryClient,
+  );
+};
+/**
+ * Pull live model/config from the OpenClaw gateway and update this agent's MC record.
+ * @summary Sync Agent From Gateway
+ */
+export type syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponse200 =
+  {
+    data: AgentSyncResponse;
+    status: 200;
+  };
+
+export type syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponse422 =
+  {
+    data: HTTPValidationError;
+    status: 422;
+  };
+
+export type syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponseSuccess =
+  syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponse200 & {
+    headers: Headers;
+  };
+export type syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponseError =
+  syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponse422 & {
+    headers: Headers;
+  };
+
+export type syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponse =
+  | syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponseSuccess
+  | syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponseError;
+
+export const getSyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostUrl = (
+  agentId: string,
+) => {
+  return `/api/v1/agents/${agentId}/sync-from-gateway`;
+};
+
+export const syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost = async (
+  agentId: string,
+  options?: RequestInit,
+): Promise<syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponse> => {
+  return customFetch<syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostResponse>(
+    getSyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostUrl(agentId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getSyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostMutationOptions =
+  <TError = HTTPValidationError, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<
+          typeof syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost
+        >
+      >,
+      TError,
+      { agentId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  }): UseMutationOptions<
+    Awaited<
+      ReturnType<
+        typeof syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost
+      >
+    >,
+    TError,
+    { agentId: string },
+    TContext
+  > => {
+    const mutationKey = [
+      "syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost",
+    ];
+    const { mutation: mutationOptions, request: requestOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey }, request: undefined };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<
+          typeof syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost
+        >
+      >,
+      { agentId: string }
+    > = (props) => {
+      const { agentId } = props ?? {};
+
+      return syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost(
+        agentId,
+        requestOptions,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type SyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<
+        typeof syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost
+      >
+    >
+  >;
+
+export type SyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostMutationError =
+  HTTPValidationError;
+
+/**
+ * @summary Sync Agent From Gateway
+ */
+export const useSyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost = <
+  TError = HTTPValidationError,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<
+          typeof syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost
+        >
+      >,
+      TError,
+      { agentId: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<
+    ReturnType<typeof syncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPost>
+  >,
+  TError,
+  { agentId: string },
+  TContext
+> => {
+  return useMutation(
+    getSyncAgentFromGatewayApiV1AgentsAgentIdSyncFromGatewayPostMutationOptions(
+      options,
+    ),
     queryClient,
   );
 };

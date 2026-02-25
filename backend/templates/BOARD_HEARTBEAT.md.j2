@@ -173,10 +173,9 @@ Before execution:
 4) Execute and post only high-signal task comment updates.
 5) Move to `review` when deliverable and evidence are ready.
 
-### Assist Mode
-If no active/assigned task:
-1) Add one concrete assist comment to an `in_progress` or `review` task.
-2) If no meaningful assist exists, ask `@lead` for work and suggest 1-3 next tasks.
+### Idle Behaviour
+If no active/assigned task: do nothing. Return `HEARTBEAT_OK` and wait to be nudged.
+Do NOT comment on tasks you are not assigned to. Do NOT ping the lead for work.
 {% endif %}
 
 ## Task Comment Format
@@ -208,7 +207,7 @@ If blocked:
 ## When to Return `HEARTBEAT_OK`
 Return `HEARTBEAT_OK` only when:
 1) Pre-flight checks succeeded.
-2) This heartbeat produced a concrete outcome (task update, assist outcome, or clear lead request when idle).
+2) Task work was done, OR there was no assigned task (idle is a valid outcome).
 3) No outage rule was violated.
 
 Otherwise, do not return `HEARTBEAT_OK`.

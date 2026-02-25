@@ -340,6 +340,7 @@ def _build_context(
         "board_rule_max_agents": str(board.max_agents),
         "is_board_lead": str(agent.is_board_lead).lower(),
         "is_main_agent": "false",
+        "project_context": board.project_context or "",
         "claude_context": board.claude_context or "",
         "gemini_context": board.gemini_context or "",
         "session_key": session_key,

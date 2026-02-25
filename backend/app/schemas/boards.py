@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 from uuid import UUID
 
 from pydantic import model_validator
 from sqlmodel import Field, SQLModel
+
+from app.schemas.common import NonEmptyStr
 
 _ERR_GOAL_FIELDS_REQUIRED = "Confirmed goal boards require objective and success_metrics"
 _ERR_GATEWAY_REQUIRED = "gateway_id is required"
@@ -113,3 +115,20 @@ class BoardRead(BoardBase):
     organization_id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class TemplateAgentCreate(SQLModel):
+    """One agent spec inside a bulk-provision request, emitted by board templates."""
+
+    name: NonEmptyStr
+    model: str | None = None
+    is_board_lead: bool = False
+    soul_template: str | None = None
+    identity_profile: dict[str, Any] | None = None
+    heartbeat_config: dict[str, Any] | None = None
+
+
+class AgentBulkProvisionRequest(SQLModel):
+    """Request body for POST /boards/{board_id}/provision-agents."""
+
+    agents: list[TemplateAgentCreate]

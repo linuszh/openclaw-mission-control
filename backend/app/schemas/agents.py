@@ -128,7 +128,7 @@ class AgentCreate(AgentBase):
 
     is_board_lead: bool = Field(
         default=False,
-        description="Whether this agent should be designated as the board lead.",
+        description="Whether this agent should be provisioned as the board lead.",
     )
 
 

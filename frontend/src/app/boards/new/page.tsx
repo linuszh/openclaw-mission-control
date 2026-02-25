@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Code2,
+  GitBranch,
   Plus,
   Search,
   Server,
@@ -44,6 +45,8 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 
 type GatewayModel = { id: string; name: string };
+type GithubRepo = { name_with_owner: string; is_private: boolean; description: string | null };
+
 const NO_MODEL_VALUE = "__default__";
 const DEFAULT_MODEL_OPTION = { value: NO_MODEL_VALUE, label: "Default (gateway setting)" };
 
@@ -58,6 +61,7 @@ const slugify = (value: string) =>
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Code2,
+  GitBranch,
   Search,
   Server,
   Plus,
@@ -65,6 +69,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 
 const COLOR_MAP: Record<string, { border: string; bg: string; text: string }> = {
   blue: { border: "border-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+  emerald: { border: "border-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700" },
   purple: { border: "border-purple-500", bg: "bg-purple-50", text: "text-purple-700" },
   orange: { border: "border-orange-500", bg: "bg-orange-50", text: "text-orange-700" },
   slate: { border: "border-slate-400", bg: "bg-slate-50", text: "text-slate-700" },
@@ -169,6 +174,7 @@ function ConfigureForm({
     leadModel !== "" ? leadModel : NO_MODEL_VALUE,
   );
   const [notificationChannel, setNotificationChannel] = useState<string>("");
+  const [githubRepo, setGithubRepo] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const gatewaysQuery = useListGatewaysApiV1GatewaysGet<
@@ -215,6 +221,17 @@ function ConfigureForm({
     enabled: Boolean(isSignedIn && isAdmin && displayGatewayId),
   });
 
+  const githubReposQuery = useQuery({
+    queryKey: ["github-repos"],
+    queryFn: () =>
+      customFetch<{ data: GithubRepo[] }>(
+        `/api/v1/github/repos`,
+        { method: "GET" },
+      ),
+    enabled: Boolean(isSignedIn && isAdmin && template.requiresGithubRepo),
+    retry: false,
+  });
+
   const modelOptions = [
     DEFAULT_MODEL_OPTION,
     ...(modelsQuery.data?.data?.models ?? []).map((m) => ({
@@ -222,6 +239,16 @@ function ConfigureForm({
       label: m.name,
     })),
   ];
+
+  const githubRepoOptions = useMemo(() => {
+    const repos: GithubRepo[] = Array.isArray(githubReposQuery.data?.data)
+      ? (githubReposQuery.data.data as GithubRepo[])
+      : [];
+    return repos.map((r) => ({
+      value: r.name_with_owner,
+      label: `${r.name_with_owner}${r.is_private ? " 🔒" : ""}`,
+    }));
+  }, [githubReposQuery.data]);
 
   const createBoardMutation = useCreateBoardApiV1BoardsPost<ApiError>({
     mutation: {
@@ -258,7 +285,13 @@ function ConfigureForm({
   const errorMessage =
     error ?? gatewaysQuery.error?.message ?? groupsQuery.error?.message ?? null;
 
-  const isFormReady = Boolean(name.trim() && description.trim() && displayGatewayId);
+  const isGithubRepoRequired = Boolean(template.requiresGithubRepo);
+  const isFormReady = Boolean(
+    name.trim() &&
+      description.trim() &&
+      displayGatewayId &&
+      (!isGithubRepoRequired || githubRepo),
+  );
 
   const gatewayOptions = useMemo(
     () => gateways.map((gateway) => ({ value: gateway.id, label: gateway.name })),
@@ -291,6 +324,10 @@ function ConfigureForm({
       setError("Board description is required.");
       return;
     }
+    if (isGithubRepoRequired && !githubRepo) {
+      setError("Select a GitHub repository for the Code Farm.");
+      return;
+    }
     setError(null);
     createBoardMutation.mutate({
       data: {
@@ -301,6 +338,7 @@ function ConfigureForm({
         board_group_id: boardGroupId === "none" ? null : boardGroupId,
         default_model: defaultModel === NO_MODEL_VALUE ? null : defaultModel || null,
         notification_channel: notificationChannel || undefined,
+        project_context: githubRepo || undefined,
       },
     });
   };
@@ -357,6 +395,39 @@ function ConfigureForm({
               />
             </div>
           </div>
+
+          {/* GitHub repo picker — only shown for Code Farm template */}
+          {isGithubRepoRequired ? (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900">
+                GitHub repository <span className="text-red-500">*</span>
+              </label>
+              <SearchableSelect
+                ariaLabel="Select GitHub repository"
+                value={githubRepo}
+                onValueChange={setGithubRepo}
+                options={githubRepoOptions}
+                placeholder={
+                  githubReposQuery.isLoading
+                    ? "Loading repositories…"
+                    : "Select repository"
+                }
+                searchPlaceholder="Search repositories..."
+                emptyMessage={
+                  githubReposQuery.isError
+                    ? "Failed to load repos — is gh CLI installed and authenticated?"
+                    : "No repositories found."
+                }
+                triggerClassName="w-full h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                contentClassName="rounded-xl border border-slate-200 shadow-lg"
+                itemClassName="px-4 py-3 text-sm text-slate-700 data-[selected=true]:bg-slate-50 data-[selected=true]:text-slate-900"
+                disabled={isLoading || githubReposQuery.isLoading}
+              />
+              <p className="text-xs text-slate-500">
+                The Orchestrator will scan issues and PRs in this repo on every heartbeat.
+              </p>
+            </div>
+          ) : null}
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">

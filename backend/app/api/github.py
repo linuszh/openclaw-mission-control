@@ -37,7 +37,7 @@ class GithubRepo(SQLModel):
     ),
 )
 async def list_github_repos(
-    _ctx: OrganizationContext = ORG_MEMBER_DEP,  # type: ignore[assignment]
+    _ctx: OrganizationContext = ORG_MEMBER_DEP,
 ) -> list[GithubRepo]:
     """Shell out to `gh repo list` and return parsed repo descriptors."""
     try:

@@ -9,6 +9,11 @@ from dataclasses import dataclass
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.services.openclaw.lifecycle_queue import TASK_TYPE as LIFECYCLE_RECONCILE_TASK_TYPE
+from app.services.openclaw.lifecycle_queue import (
+    requeue_lifecycle_queue_task,
+)
+from app.services.openclaw.lifecycle_reconcile import process_lifecycle_queue_task
 from app.services.queue import QueuedTask, dequeue_task
 from app.services.email_sync import (
     TASK_TYPE as EMAIL_SYNC_TASK_TYPE,
@@ -24,6 +29,7 @@ from app.services.webhooks.dispatch import (
 from app.services.webhooks.queue import TASK_TYPE as WEBHOOK_TASK_TYPE
 
 logger = get_logger(__name__)
+_WORKER_BLOCK_TIMEOUT_SECONDS = 5.0
 
 
 @dataclass(frozen=True)
@@ -34,6 +40,14 @@ class _TaskHandler:
 
 
 _TASK_HANDLERS: dict[str, _TaskHandler] = {
+    LIFECYCLE_RECONCILE_TASK_TYPE: _TaskHandler(
+        handler=process_lifecycle_queue_task,
+        attempts_to_delay=lambda attempts: min(
+            settings.rq_dispatch_retry_base_seconds * (2 ** max(0, attempts)),
+            settings.rq_dispatch_retry_max_seconds,
+        ),
+        requeue=lambda task, delay: requeue_lifecycle_queue_task(task, delay_seconds=delay),
+    ),
     WEBHOOK_TASK_TYPE: _TaskHandler(
         handler=process_webhook_queue_task,
         attempts_to_delay=lambda attempts: min(
@@ -130,7 +144,8 @@ async def _run_worker_loop() -> None:
         try:
             await flush_queue(
                 block=True,
-                block_timeout=0,
+                # Keep a finite timeout so scheduled tasks are periodically drained.
+                block_timeout=_WORKER_BLOCK_TIMEOUT_SECONDS,
             )
         except Exception:
             logger.exception(

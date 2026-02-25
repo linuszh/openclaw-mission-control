@@ -126,6 +126,11 @@ class AgentBase(SQLModel):
 class AgentCreate(AgentBase):
     """Payload for creating a new agent."""
 
+    is_board_lead: bool = Field(
+        default=False,
+        description="Whether this agent should be designated as the board lead.",
+    )
+
 
 class AgentUpdate(SQLModel):
     """Payload for patching an existing agent."""

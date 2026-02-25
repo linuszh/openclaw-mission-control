@@ -87,6 +87,7 @@ export default function NewAgentPage() {
   const prefillName = searchParams.get("name") ?? "";
   const prefillModel = searchParams.get("model") ?? "";
   const prefillBoardId = searchParams.get("boardId") ?? "";
+  const prefillIsLead = searchParams.get("isLead") === "true";
 
   const [name, setName] = useState(prefillName);
   const [boardId, setBoardId] = useState<string>(prefillBoardId);
@@ -166,6 +167,7 @@ export default function NewAgentPage() {
       data: {
         name: trimmed,
         board_id: resolvedBoardId,
+        is_board_lead: prefillIsLead,
         heartbeat_config: {
           every: heartbeatEvery.trim() || "10m",
           target: "last",

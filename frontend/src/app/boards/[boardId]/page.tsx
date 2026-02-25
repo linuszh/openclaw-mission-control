@@ -769,7 +769,7 @@ function SetupAgentsBanner({
         {agentLinks.map((agent) => (
           <a
             key={agent.name}
-            href={`/agents/new?boardId=${encodeURIComponent(boardId)}&name=${encodeURIComponent(agent.name)}&model=${encodeURIComponent(agent.model)}`}
+            href={`/agents/new?boardId=${encodeURIComponent(boardId)}&name=${encodeURIComponent(agent.name)}&model=${encodeURIComponent(agent.model)}&isLead=${agent.isLead}`}
             className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
           >
             Create {agent.name} →

@@ -680,6 +680,22 @@ async def _gateway_config_agent_list(
     return cfg.get("hash"), agents_list, data
 
 
+async def get_agent_gateway_config(
+    agent_id: str,
+    *,
+    config: GatewayClientConfig,
+) -> dict[str, Any] | None:
+    """Return the gateway config entry for agent_id, or None if not found."""
+    _, agents_list, _ = await _gateway_config_agent_list(config)
+    for entry in agents_list:
+        if not isinstance(entry, dict):
+            continue
+        gw_id = entry.get("agentId") or entry.get("id")
+        if gw_id == agent_id:
+            return entry
+    return None
+
+
 def _heartbeat_entry_map(
     entries: list[tuple[str, str, dict[str, Any]]],
 ) -> dict[str, tuple[str, dict[str, Any]]]:

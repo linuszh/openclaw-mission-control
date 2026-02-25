@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.deps import get_session, require_admin_or_agent, require_admin_auth
 from app.api.boards import list_boards
+from app.api.deps import get_session, require_admin_auth, require_admin_or_agent
 from app.api.tasks import create_task
+from app.core.auth import AuthContext
+from app.core.logging import get_logger
 from app.models.boards import Board
 from app.schemas.boards import BoardRead
-from app.schemas.tasks import TaskCreate, TaskRead
 from app.schemas.pagination import DefaultLimitOffsetPage
-from app.core.logging import get_logger
-from app.core.auth import AuthContext
+from app.schemas.tasks import TaskCreate, TaskRead
 
 router = APIRouter(prefix="/bot", tags=["bot"])
 logger = get_logger(__name__)
@@ -43,7 +43,7 @@ async def bot_create_task(
     board = await session.get(Board, board_id)
     if not board:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-    
+
     return await create_task(
         payload=payload,
         board=board,
@@ -62,7 +62,7 @@ async def bot_get_project_context(
     board = await session.get(Board, board_id)
     if not board:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-    
+
     return {
         "name": board.name,
         "description": board.description,

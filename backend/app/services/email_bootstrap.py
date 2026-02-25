@@ -34,9 +34,7 @@ async def bootstrap_default_email_account(session: AsyncSession) -> None:
         )
     )
     if existing_result.first() is not None:
-        logger.info(
-            "email.bootstrap.skipped address=%s", settings.default_email_address
-        )
+        logger.info("email.bootstrap.skipped address=%s", settings.default_email_address)
         return
 
     account = EmailAccount(

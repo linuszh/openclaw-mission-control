@@ -241,7 +241,7 @@ async def discover_gateway_agents(
     config = GatewayClientConfig(url=gateway.url, token=gateway.token)
     result = await openclaw_call("agents.list", {}, config=config)
     gateway_agents: list[dict] = []
-    
+
     if isinstance(result, list):
         gateway_agents = [a for a in result if isinstance(a, dict)]
     elif isinstance(result, dict):

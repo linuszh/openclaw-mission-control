@@ -2102,10 +2102,7 @@ async def _apply_lead_task_update(
     await session.commit()
     await session.refresh(update.task)
     # Board-level notification for done/blocked status changes
-    if (
-        update.task.status != update.previous_status
-        and update.task.status in ("done", "blocked")
-    ):
+    if update.task.status != update.previous_status and update.task.status in ("done", "blocked"):
         _board = await session.get(Board, update.board_id)
         if _board and _board.notification_channel:
             await notify_task_status(
@@ -2455,10 +2452,7 @@ async def _finalize_updated_task(
     await session.commit()
     await session.refresh(update.task)
     # Board-level notification for done/blocked status changes
-    if (
-        update.task.status != update.previous_status
-        and update.task.status in ("done", "blocked")
-    ):
+    if update.task.status != update.previous_status and update.task.status in ("done", "blocked"):
         _board = await session.get(Board, update.board_id)
         if _board and _board.notification_channel:
             await notify_task_status(

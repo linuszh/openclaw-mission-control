@@ -15,10 +15,10 @@ from sqlmodel import select
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.session import async_session_maker
-from app.models.email import EmailAccount, EmailMessage
-from app.services.queue import QueuedTask, enqueue_task
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
 from app.models.agents import Agent
+from app.models.email import EmailAccount, EmailMessage
+from app.services.openclaw.gateway_dispatch import GatewayDispatchService
+from app.services.queue import QueuedTask, enqueue_task
 
 logger = get_logger(__name__)
 
@@ -89,15 +89,16 @@ async def sync_single_account(session: Any, account: EmailAccount) -> None:
             "email.sync.message_synced",
             extra={"uid": msg_data["uid"], "account_id": str(account.id)},
         )
-        
+
         # Notify the Gatekeeper about new emails
         await _notify_gatekeeper_on_new_email(session, email_message)
 
 
 async def _notify_gatekeeper_on_new_email(session: Any, email_message: EmailMessage) -> None:
     """Relay a new email summary to the board lead acting as gatekeeper."""
-    from app.models.boards import Board
     from sqlmodel import col
+
+    from app.models.boards import Board
 
     # Find any board lead with an active session in this organization.
     board_result = await session.exec(

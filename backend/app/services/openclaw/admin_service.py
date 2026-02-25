@@ -197,11 +197,11 @@ class GatewayAdminLifecycleService(OpenClawDBService):
             timeout_context="compatibility check",
         )
         try:
-            result = await backoff.run(lambda: check_gateway_runtime_compatibility(config))
+            result = await backoff.run(lambda: check_gateway_version_compatibility(config))
         except (OpenClawGatewayError, TimeoutError) as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Gateway compatibility check failed: {detail}",
+                detail=f"Gateway compatibility check failed: {exc}",
             ) from exc
         if not result.compatible:
             raise HTTPException(

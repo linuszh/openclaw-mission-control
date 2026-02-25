@@ -4,7 +4,6 @@ from app.models.activity_events import ActivityEvent
 from app.models.agents import Agent
 from app.models.approval_task_links import ApprovalTaskLink
 from app.models.approvals import Approval
-from app.models.email import EmailAccount, EmailMessage
 from app.models.board_group_memory import BoardGroupMemory
 from app.models.board_groups import BoardGroup
 from app.models.board_memory import BoardMemory
@@ -12,6 +11,7 @@ from app.models.board_onboarding import BoardOnboardingSession
 from app.models.board_webhook_payloads import BoardWebhookPayload
 from app.models.board_webhooks import BoardWebhook
 from app.models.boards import Board
+from app.models.email import EmailAccount, EmailMessage
 from app.models.gateways import Gateway
 from app.models.organization_board_access import OrganizationBoardAccess
 from app.models.organization_invite_board_access import OrganizationInviteBoardAccess

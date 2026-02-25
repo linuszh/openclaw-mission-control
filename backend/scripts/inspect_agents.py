@@ -1,16 +1,18 @@
 import asyncio
+
 from sqlmodel import select
+
 from app.db.session import async_session_maker
 from app.models.agents import Agent
+
 
 async def main():
     async with async_session_maker() as session:
         result = await session.execute(
             select(Agent).where(
-                Agent.id.in_([
-                    '8877183d-6a0e-499f-846c-de84ff29264f', 
-                    '0d05b031-2d6d-47b7-a54a-e7e0fe9233ea'
-                ])
+                Agent.id.in_(
+                    ["8877183d-6a0e-499f-846c-de84ff29264f", "0d05b031-2d6d-47b7-a54a-e7e0fe9233ea"]
+                )
             )
         )
         agents = result.scalars().all()
@@ -24,6 +26,7 @@ async def main():
             print(f"  last_seen_at: {a.last_seen_at}")
             print(f"  updated_at: {a.updated_at}")
             print("---")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

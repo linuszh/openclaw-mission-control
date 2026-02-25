@@ -9,19 +9,17 @@ from dataclasses import dataclass
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.services.email_sync import TASK_TYPE as EMAIL_SYNC_TASK_TYPE
+from app.services.email_sync import (
+    enqueue_email_sync,
+    sync_all_accounts_task,
+)
 from app.services.openclaw.lifecycle_queue import TASK_TYPE as LIFECYCLE_RECONCILE_TASK_TYPE
 from app.services.openclaw.lifecycle_queue import (
     requeue_lifecycle_queue_task,
 )
 from app.services.openclaw.lifecycle_reconcile import process_lifecycle_queue_task
 from app.services.queue import QueuedTask, dequeue_task
-from app.services.email_sync import (
-    TASK_TYPE as EMAIL_SYNC_TASK_TYPE,
-)
-from app.services.email_sync import (
-    enqueue_email_sync,
-    sync_all_accounts_task,
-)
 from app.services.webhooks.dispatch import (
     process_webhook_queue_task,
     requeue_webhook_queue_task,

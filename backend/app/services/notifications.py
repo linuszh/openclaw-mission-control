@@ -151,12 +151,9 @@ async def notify_task_status(
         return
     emoji = "✅" if new_status == "done" else "🚫"
     telegram_text = (
-        f"{emoji} <b>{board_name}</b>: "
-        f"Task <i>{task_title}</i> → <b>{new_status}</b>"
+        f"{emoji} <b>{board_name}</b>: " f"Task <i>{task_title}</i> → <b>{new_status}</b>"
     )
-    discord_text = (
-        f"{emoji} **{board_name}**: Task *{task_title}* → **{new_status}**"
-    )
+    discord_text = f"{emoji} **{board_name}**: Task *{task_title}* → **{new_status}**"
 
     if channel in ("telegram", "both"):
         await send_telegram_message(telegram_text)

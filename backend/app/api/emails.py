@@ -12,13 +12,11 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import col, select
-
-from app.schemas.pagination import DefaultLimitOffsetPage
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import ORG_MEMBER_DEP, SESSION_DEP
-from app.db.pagination import paginate
 from app.core.logging import get_logger
+from app.db.pagination import paginate
 from app.models.agents import Agent
 from app.models.boards import Board
 from app.models.email import EmailAccount, EmailMessage
@@ -32,6 +30,7 @@ from app.schemas.email import (
     EmailSummarizeResponse,
     EmailUpdateRequest,
 )
+from app.schemas.pagination import DefaultLimitOffsetPage
 from app.schemas.tasks import TaskRead
 from app.services.activity_log import record_activity
 from app.services.email_sync import enqueue_email_sync
@@ -167,9 +166,7 @@ async def send_email(
     session: AsyncSession = SESSION_DEP,
 ) -> EmailMessage:
     """Send an outbound email from the org's first configured account and record it."""
-    statement = select(EmailAccount).where(
-        EmailAccount.organization_id == ctx.organization.id
-    )
+    statement = select(EmailAccount).where(EmailAccount.organization_id == ctx.organization.id)
     result = await session.exec(statement)
     account = result.first()
     if not account:
@@ -178,9 +175,7 @@ async def send_email(
             detail="No email account configured for this organization.",
         )
     try:
-        await asyncio.to_thread(
-            _smtp_send, account, payload.to, payload.subject, payload.body
-        )
+        await asyncio.to_thread(_smtp_send, account, payload.to, payload.subject, payload.body)
     except Exception as exc:
         logger.warning("email.send.smtp_failed to=%s error=%s", payload.to, exc)
         raise HTTPException(
@@ -298,10 +293,7 @@ async def convert_email_to_task(
         )
 
     title = payload.title or email_msg.subject
-    description = (
-        payload.description
-        or f"From: {email_msg.sender}\n\n{email_msg.body or ''}"
-    )
+    description = payload.description or f"From: {email_msg.sender}\n\n{email_msg.body or ''}"
 
     task = Task(
         board_id=board.id,
@@ -385,9 +377,7 @@ async def summarize_email(
     )
 
     if error is not None:
-        logger.warning(
-            "email.summarize.dispatch_failed email_id=%s error=%s", email_id, error
-        )
+        logger.warning("email.summarize.dispatch_failed email_id=%s error=%s", email_id, error)
         return EmailSummarizeResponse(dispatched=False)
 
     return EmailSummarizeResponse(dispatched=True)

@@ -30,7 +30,13 @@ from app.models.board_groups import BoardGroup
 from app.models.boards import Board
 from app.models.gateways import Gateway
 from app.schemas.agents import AgentCreate, AgentRead
-from app.schemas.boards import AgentBulkProvisionRequest, BoardCreate, BoardRead, BoardUpdate, TemplateAgentCreate
+from app.schemas.boards import (
+    AgentBulkProvisionRequest,
+    BoardCreate,
+    BoardRead,
+    BoardUpdate,
+    TemplateAgentCreate,
+)
 from app.schemas.common import OkResponse
 from app.schemas.pagination import DefaultLimitOffsetPage
 from app.schemas.view_models import BoardGroupSnapshot, BoardSnapshot

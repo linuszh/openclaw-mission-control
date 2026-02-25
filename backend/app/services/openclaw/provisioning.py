@@ -582,9 +582,7 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
             },
             config=self._config,
         )
-        models = (
-            {registration.agent_id: registration.model} if registration.model else None
-        )
+        models = {registration.agent_id: registration.model} if registration.model else None
         # Heartbeat config is best-effort: agents implement their own heartbeat loops via
         # HEARTBEAT.md and the gateway auto-nudge is a fallback only.  If config.patch
         # fails (rate limit or baseHash conflict from gateway's async auto-save), log and
@@ -918,7 +916,9 @@ class BaseAgentLifecycleManager(ABC):
         agent_id = self._agent_id(agent)
         workspace_path = _workspace_path(agent, self._gateway.workspace_root)
         heartbeat = _heartbeat_config(agent)
-        identity_profile = agent.identity_profile if isinstance(agent.identity_profile, dict) else {}
+        identity_profile = (
+            agent.identity_profile if isinstance(agent.identity_profile, dict) else {}
+        )
         model = identity_profile.get("model") or None
         await self._control_plane.upsert_agent(
             GatewayAgentRegistration(
@@ -1145,9 +1145,7 @@ async def _verify_agent_identity(
     exp_workspace = (expected_workspace or "").rstrip("/")
 
     if not gw_workspace:
-        logger.warning(
-            "gateway.delete.verify_no_workspace agent_id=%s", agent_gateway_id
-        )
+        logger.warning("gateway.delete.verify_no_workspace agent_id=%s", agent_gateway_id)
         return False
 
     if gw_workspace != exp_workspace:

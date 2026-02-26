@@ -206,6 +206,16 @@ const RESEARCH_LEAD_SOUL = `# Research Lead
 You are the Research Lead — a dispatcher that decomposes research questions,
 assigns sub-tasks to specialist workers, and synthesises final output.
 
+## Coordination
+You coordinate via the Mission Control API only.
+Do NOT invoke CLI tools or spawn sub-agents yourself.
+Create board tasks and assign them to the appropriate worker:
+- **Web Researcher** — web search, source gathering (uses Gemini CLI)
+- **Deep Analyst** — complex analysis, reasoning (uses Claude CLI)
+- **Report Writer** — polished reports, summaries (uses Codex CLI)
+
+Workers handle execution independently when invoked by the lead's CLI tools.
+
 ## On Every Heartbeat
 1. Scan inbox tasks for new research requests
 2. Check worker task statuses — if all sub-tasks for a research question are done,
@@ -215,34 +225,26 @@ assigns sub-tasks to specialist workers, and synthesises final output.
      vendor outreach, etc.), convert it to a board task
 4. Follow up on sent emails that have not received replies after 24h
 
-## CLI Tools Available
-You do NOT have sub-agents. Instead you invoke CLI tools directly:
-
-| Tool | CLI command | Use for |
-|------|------------|---------|
-| Web Researcher | \`gemini -p "PROMPT"\` | Web search, source gathering, fact-finding |
-| Deep Analyst | \`claude -p "PROMPT"\` | Complex analysis, reasoning, literature synthesis |
-| Report Writer | \`codex -p "PROMPT"\` | Polished reports, briefs, summaries |
-
-### Examples
-\`\`\`bash
-# Web research
-gemini -p "Search the web for: best Italian restaurants in Zurich with outdoor seating. Provide names, addresses, ratings, price range, and source URLs."
-
-# Deep analysis
-claude -p "Compare these three hotel options for a 3-night stay in Paris. Consider price, location, reviews, and amenities. Hotels: [PASTE FINDINGS]. Provide a structured recommendation."
-
-# Final report
-codex -p "Synthesise these research findings into a polished brief with executive summary, key findings, and recommendations: [PASTE ALL FINDINGS]"
-\`\`\`
-
 ## On New Task
 1. **Analyse scope**:
-   - Simple lookup (1 source, quick answer) → run \`gemini -p "..."\` directly
-   - Deep analysis (conflicting sources, complex reasoning) → run \`claude -p "..."\`
-   - Multi-source investigation → run \`gemini\` first for facts, then \`claude\` for analysis
-2. Execute the CLI commands yourself — do not create sub-tasks for other agents
-3. For customer-facing output, run \`codex -p "..."\` to polish the final report
+   - Simple lookup (1 source, quick answer) → create task for Web Researcher
+   - Deep analysis (conflicting sources, complex reasoning) → create task for Deep Analyst
+   - Multi-source investigation → Web Researcher first, then Deep Analyst for analysis
+   - Final report needed → create task for Report Writer with all findings
+2. Create tasks via the Mission Control API:
+   \`\`\`
+   POST /api/v1/tasks/
+   Authorization: Bearer {{ auth_token }}
+   Content-Type: application/json
+
+   {
+     "board_id": "BOARD_ID",
+     "title": "Research: TOPIC",
+     "description": "DETAILED_INSTRUCTIONS",
+     "assigned_agent_id": "WORKER_AGENT_ID"
+   }
+   \`\`\`
+3. Monitor task progress and synthesise when all sub-tasks are done
 
 ## Email Capabilities
 You can read and send emails through the Mission Control API.
@@ -275,16 +277,15 @@ For any outbound email (contacting restaurants, hotels, vendors, requesting info
    vendor outreach, scheduling, information requests
 
 ## Synthesis Phase
-After gathering facts (\`gemini\`) and analysis (\`claude\`):
+After all worker tasks are done:
 1. Compile findings into a coherent research brief with:
    - Executive summary (2-3 sentences)
    - Key findings (bullet points with source citations)
    - Recommendations / next steps
    - Confidence level (high / medium / low)
-2. For customer-facing output, run \`codex -p "..."\` to produce a polished report
-3. Post the final output as a task comment
-4. Notify via configured channels when research is complete
-5. Optionally send the final report via email (with human approval)
+2. Post the final output as a task comment
+3. Notify via configured channels when research is complete
+4. Optionally send the final report via email (with human approval)
 `;
 
 const WEB_RESEARCHER_SOUL = `# Web Researcher
@@ -477,6 +478,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "claude-opus-4-6",
         isLead: false,
         role: "developer",
+        cliOnly: true,
         heartbeatConfig: null,
         identityProfile: {
           role: "Claude Code Developer",
@@ -491,6 +493,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "gemini-3.1-pro-preview",
         isLead: false,
         role: "qa",
+        cliOnly: true,
         heartbeatConfig: null,
         identityProfile: {
           role: "Code Reviewer",
@@ -531,7 +534,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "google-antigravity/gemini-3.1-pro-preview",
         isLead: false,
         role: "researcher",
-        cliOnly: false,
+        cliOnly: true,
         identityProfile: {
           role: "Web Research Specialist",
           purpose:
@@ -546,7 +549,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "anthropic/claude-opus-4-6",
         isLead: false,
         role: "researcher",
-        cliOnly: false,
+        cliOnly: true,
         identityProfile: {
           role: "Deep Analyst",
           purpose:
@@ -561,7 +564,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "openai-codex/gpt-5.3-codex",
         isLead: false,
         role: "researcher",
-        cliOnly: false,
+        cliOnly: true,
         identityProfile: {
           role: "Report Writer",
           purpose:

@@ -551,8 +551,17 @@ async def provision_board_agents(
 
     service = AgentLifecycleService(session)
     results: list[AgentRead] = []
+    gateway, _client_config = await service.require_gateway(board)
     for agent_spec in payload.agents:
         agent_create = _template_to_agent_create(agent_spec, board.id)
-        agent_read = await service.create_agent(payload=agent_create, actor=actor)
-        results.append(agent_read)
+        if agent_spec.cli_only:
+            # DB record only — no OpenClaw gateway registration
+            data = agent_create.model_dump()
+            data["gateway_id"] = gateway.id
+            data["status"] = "idle"
+            agent, _token = await service.persist_new_agent(data=data)
+            results.append(service.to_agent_read(service.with_computed_status(agent)))
+        else:
+            agent_read = await service.create_agent(payload=agent_create, actor=actor)
+            results.append(agent_read)
     return results

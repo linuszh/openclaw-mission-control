@@ -18,6 +18,7 @@ from uuid import uuid4
 
 import websockets
 from websockets.exceptions import WebSocketException
+from websockets.typing import Origin
 
 from app.core.logging import TRACE_LEVEL, get_logger
 from app.services.openclaw.device_identity import (
@@ -176,7 +177,7 @@ class GatewayConfig:
     disable_device_pairing: bool = False
 
 
-def _origin_from_gateway_url(url: str) -> str:
+def _origin_from_gateway_url(url: str) -> Origin:
     """Derive an HTTP(S) origin from a ws/wss gateway URL.
 
     The OpenClaw gateway validates the Origin header against its
@@ -186,7 +187,7 @@ def _origin_from_gateway_url(url: str) -> str:
     """
     parsed = urlparse(url)
     scheme = "https" if parsed.scheme == "wss" else "http"
-    return f"{scheme}://{parsed.netloc}"
+    return Origin(f"{scheme}://{parsed.netloc}")
 
 
 def _build_gateway_url(config: GatewayConfig) -> str:

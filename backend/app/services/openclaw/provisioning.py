@@ -23,7 +23,6 @@ from app.models.gateways import Gateway
 from app.services import souls_directory
 from app.services.openclaw.constants import (
     BOARD_SHARED_TEMPLATE_MAP,
-    DEFAULT_CHANNEL_HEARTBEAT_VISIBILITY,
     DEFAULT_GATEWAY_FILES,
     DEFAULT_HEARTBEAT_CONFIG,
     DEFAULT_IDENTITY_PROFILE,
@@ -107,27 +106,6 @@ def _heartbeat_config(agent: Agent) -> dict[str, Any]:
     if isinstance(agent.heartbeat_config, dict):
         merged.update(agent.heartbeat_config)
     return merged
-
-
-def _channel_heartbeat_visibility_patch(config_data: dict[str, Any]) -> dict[str, Any] | None:
-    channels = config_data.get("channels")
-    if not isinstance(channels, dict):
-        return {"defaults": {"heartbeat": DEFAULT_CHANNEL_HEARTBEAT_VISIBILITY.copy()}}
-    defaults = channels.get("defaults")
-    if not isinstance(defaults, dict):
-        return {"defaults": {"heartbeat": DEFAULT_CHANNEL_HEARTBEAT_VISIBILITY.copy()}}
-    heartbeat = defaults.get("heartbeat")
-    if not isinstance(heartbeat, dict):
-        return {"defaults": {"heartbeat": DEFAULT_CHANNEL_HEARTBEAT_VISIBILITY.copy()}}
-    merged = dict(heartbeat)
-    changed = False
-    for key, value in DEFAULT_CHANNEL_HEARTBEAT_VISIBILITY.items():
-        if key not in merged:
-            merged[key] = value
-            changed = True
-    if not changed:
-        return None
-    return {"defaults": {"heartbeat": merged}}
 
 
 def _template_env() -> Environment:
@@ -642,9 +620,9 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
             new_list = _updated_agent_list(raw_list, entry_by_id, models=models)
 
             patch: dict[str, Any] = {"agents": {"list": new_list}}
-            channels_patch = _channel_heartbeat_visibility_patch(config_data)
-            if channels_patch is not None:
-                patch["channels"] = channels_patch
+            # Do NOT patch channels — gateway config.patch may shallow-merge
+            # the channels key, wiping channels.telegram and channels.discord.
+            # Heartbeat visibility defaults are already set in openclaw.json.
             params = {"raw": json.dumps(patch)}
             if base_hash:
                 params["baseHash"] = base_hash
@@ -734,14 +712,14 @@ def _updated_agent_list(
     for agent_id, (workspace_path, heartbeat) in entry_by_id.items():
         if agent_id in updated_ids:
             continue
-        new_entry: dict[str, Any] = {
+        fresh_entry: dict[str, Any] = {
             "agentId": agent_id,
             "workspace": workspace_path,
             "heartbeat": heartbeat,
         }
         if models and agent_id in models:
-            new_entry["model"] = models[agent_id]
-        new_list.append(new_entry)
+            fresh_entry["model"] = models[agent_id]
+        new_list.append(fresh_entry)
 
     return new_list
 

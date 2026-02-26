@@ -126,6 +126,7 @@ class TemplateAgentCreate(SQLModel):
     soul_template: str | None = None
     identity_profile: dict[str, Any] | None = None
     heartbeat_config: dict[str, Any] | None = None
+    cli_only: bool = False
 
 
 class AgentBulkProvisionRequest(SQLModel):

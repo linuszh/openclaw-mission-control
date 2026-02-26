@@ -6,8 +6,8 @@ export type AgentTemplate = {
   soulTemplate?: string;
   identityProfile?: Record<string, string>;
   heartbeatConfig?: Record<string, unknown> | null;
-  /** CLI-only agents are listed in the UI but NOT provisioned in OpenClaw.
-   *  The lead agent invokes them via shell commands (claude, gemini, codex). */
+  /** When true the agent is shown in the UI but not provisioned in OpenClaw.
+   *  The lead invokes the tool via CLI instead. */
   cliOnly?: boolean;
 };
 
@@ -215,13 +215,34 @@ assigns sub-tasks to specialist workers, and synthesises final output.
      vendor outreach, etc.), convert it to a board task
 4. Follow up on sent emails that have not received replies after 24h
 
+## CLI Tools Available
+You do NOT have sub-agents. Instead you invoke CLI tools directly:
+
+| Tool | CLI command | Use for |
+|------|------------|---------|
+| Web Researcher | \`gemini -p "PROMPT"\` | Web search, source gathering, fact-finding |
+| Deep Analyst | \`claude -p "PROMPT"\` | Complex analysis, reasoning, literature synthesis |
+| Report Writer | \`codex -p "PROMPT"\` | Polished reports, briefs, summaries |
+
+### Examples
+\`\`\`bash
+# Web research
+gemini -p "Search the web for: best Italian restaurants in Zurich with outdoor seating. Provide names, addresses, ratings, price range, and source URLs."
+
+# Deep analysis
+claude -p "Compare these three hotel options for a 3-night stay in Paris. Consider price, location, reviews, and amenities. Hotels: [PASTE FINDINGS]. Provide a structured recommendation."
+
+# Final report
+codex -p "Synthesise these research findings into a polished brief with executive summary, key findings, and recommendations: [PASTE ALL FINDINGS]"
+\`\`\`
+
 ## On New Task
 1. **Analyse scope**:
-   - Simple lookup (1 source, quick answer) → assign to Web Researcher
-   - Deep analysis (conflicting sources, complex reasoning) → assign to Deep Analyst
-   - Multi-source investigation → assign sub-tasks to both, then synthesise
-2. Create sub-tasks with clear deliverables and acceptance criteria
-3. Tag each sub-task with the parent research question ID
+   - Simple lookup (1 source, quick answer) → run \`gemini -p "..."\` directly
+   - Deep analysis (conflicting sources, complex reasoning) → run \`claude -p "..."\`
+   - Multi-source investigation → run \`gemini\` first for facts, then \`claude\` for analysis
+2. Execute the CLI commands yourself — do not create sub-tasks for other agents
+3. For customer-facing output, run \`codex -p "..."\` to polish the final report
 
 ## Email Capabilities
 You can read and send emails through the Mission Control API.
@@ -254,14 +275,14 @@ For any outbound email (contacting restaurants, hotels, vendors, requesting info
    vendor outreach, scheduling, information requests
 
 ## Synthesis Phase
-When all sub-tasks for a research question are complete:
-1. Gather findings from Web Researcher and Deep Analyst task outputs
-2. Compile into a coherent research brief with:
+After gathering facts (\`gemini\`) and analysis (\`claude\`):
+1. Compile findings into a coherent research brief with:
    - Executive summary (2-3 sentences)
    - Key findings (bullet points with source citations)
    - Recommendations / next steps
    - Confidence level (high / medium / low)
-3. Assign to Report Writer for final polish if the output is customer-facing
+2. For customer-facing output, run \`codex -p "..."\` to produce a polished report
+3. Post the final output as a task comment
 4. Notify via configured channels when research is complete
 5. Optionally send the final report via email (with human approval)
 `;
@@ -510,7 +531,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "google-antigravity/gemini-3.1-pro-preview",
         isLead: false,
         role: "researcher",
-        cliOnly: true,
+        cliOnly: false,
         identityProfile: {
           role: "Web Research Specialist",
           purpose:
@@ -525,7 +546,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "anthropic/claude-opus-4-6",
         isLead: false,
         role: "researcher",
-        cliOnly: true,
+        cliOnly: false,
         identityProfile: {
           role: "Deep Analyst",
           purpose:
@@ -540,7 +561,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "openai-codex/gpt-5.3-codex",
         isLead: false,
         role: "researcher",
-        cliOnly: true,
+        cliOnly: false,
         identityProfile: {
           role: "Report Writer",
           purpose:

@@ -40,6 +40,7 @@ import type { BoardGroupBoardSnapshot } from "@/api/generated/model";
 import { Markdown } from "@/components/atoms/Markdown";
 import { SignedOutPanel } from "@/components/auth/SignedOutPanel";
 import { DashboardSidebar } from "@/components/organisms/DashboardSidebar";
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav";
 import { DashboardShell } from "@/components/templates/DashboardShell";
 import { BoardChatComposer } from "@/components/BoardChatComposer";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -742,9 +743,9 @@ export default function BoardGroupDetailPage() {
       </SignedOut>
       <SignedIn>
         <DashboardSidebar />
-        <main className="flex-1 overflow-y-auto bg-slate-50">
+        <main className="flex-1 overflow-y-auto bg-slate-50 pb-16 md:pb-0">
           <div className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm">
-            <div className="px-8 py-6">
+            <div className="px-4 py-3 md:px-8 md:py-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -1086,6 +1087,7 @@ export default function BoardGroupDetailPage() {
             </div>
           </div>
         </main>
+        <MobileBottomNav />
       </SignedIn>
       {isChatOpen || isNotesOpen ? (
         <div

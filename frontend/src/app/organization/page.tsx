@@ -43,6 +43,7 @@ import { SignedOutPanel } from "@/components/auth/SignedOutPanel";
 import { BoardAccessTable } from "@/components/organization/BoardAccessTable";
 import { MembersInvitesTable } from "@/components/organization/MembersInvitesTable";
 import { DashboardSidebar } from "@/components/organisms/DashboardSidebar";
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
@@ -702,9 +703,9 @@ export default function OrganizationPage() {
       </SignedOut>
       <SignedIn>
         <DashboardSidebar />
-        <main className="flex-1 overflow-y-auto bg-slate-50">
+        <main className="flex-1 overflow-y-auto bg-slate-50 pb-16 md:pb-0">
           <div className="sticky top-0 z-30 border-b border-slate-200 bg-white">
-            <div className="px-8 py-6">
+            <div className="px-4 py-3 md:px-8 md:py-6">
               <div className="flex flex-wrap items-center justify-between gap-6">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
@@ -814,6 +815,7 @@ export default function OrganizationPage() {
             </div>
           </div>
         </main>
+        <MobileBottomNav />
       </SignedIn>
 
       <Dialog open={inviteDialogOpen} onOpenChange={handleInviteDialogChange}>

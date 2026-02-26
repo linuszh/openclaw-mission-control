@@ -33,6 +33,7 @@ import { Markdown } from "@/components/atoms/Markdown";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
 import { SignedOutPanel } from "@/components/auth/SignedOutPanel";
 import { DashboardSidebar } from "@/components/organisms/DashboardSidebar";
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav";
 import { DashboardShell } from "@/components/templates/DashboardShell";
 import { createExponentialBackoff } from "@/lib/backoff";
 import {
@@ -1300,9 +1301,9 @@ export default function ActivityPage() {
           </SignedOut>
           <SignedIn>
             <DashboardSidebar />
-            <main className="flex-1 overflow-y-auto bg-slate-50">
+            <main className="flex-1 overflow-y-auto bg-slate-50 pb-16 md:pb-0">
               <div className="sticky top-0 z-30 border-b border-slate-200 bg-white">
-                <div className="px-8 py-6">
+                <div className="px-4 py-3 md:px-8 md:py-6">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1329,6 +1330,7 @@ export default function ActivityPage() {
                 />
               </div>
             </main>
+            <MobileBottomNav />
           </SignedIn>
         </>
       ) : null}

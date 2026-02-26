@@ -28,6 +28,7 @@ import {
 import { Markdown } from "@/components/atoms/Markdown";
 import { StatusDot } from "@/components/atoms/StatusDot";
 import { DashboardSidebar } from "@/components/organisms/DashboardSidebar";
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav";
 import { TaskBoard } from "@/components/organisms/TaskBoard";
 import {
   DependencyBanner,
@@ -3196,13 +3197,13 @@ export default function BoardDetailPage() {
           )}
         >
           <div className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm">
-            <div className="px-8 py-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h1 className="mt-2 text-2xl font-semibold text-slate-900 tracking-tight">
+            <div className="px-4 py-3 md:px-8 md:py-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 md:gap-4">
+                <div className="min-w-0">
+                  <h1 className="mt-1 text-lg font-semibold text-slate-900 tracking-tight truncate md:mt-2 md:text-2xl">
                     {board?.name ?? "Board"}
                   </h1>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 hidden text-sm text-slate-500 md:block">
                     Keep tasks moving through your workflow.
                   </p>
                   {isBoardLeadProvisioning ? (
@@ -3340,9 +3341,9 @@ export default function BoardDetailPage() {
             />
           ) : null}
 
-          <div className="relative flex gap-6 p-6">
+          <div className="relative flex gap-4 p-4 pb-20 md:gap-6 md:p-6 md:pb-6">
             {isOrgAdmin ? (
-              <aside className="flex h-full w-64 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+              <aside className="hidden lg:flex h-full w-64 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -3766,6 +3767,7 @@ export default function BoardDetailPage() {
             </div>
           </div>
         </main>
+        <MobileBottomNav />
       </SignedIn>
       {isDetailOpen || isChatOpen || isLiveFeedOpen ? (
         <div
@@ -3783,7 +3785,7 @@ export default function BoardDetailPage() {
       ) : null}
       <aside
         className={cn(
-          "fixed right-0 top-0 z-50 h-full w-[max(760px,45vw)] max-w-[99vw] transform bg-white shadow-2xl transition-transform",
+          "fixed right-0 top-0 z-50 h-full w-full md:w-[max(760px,45vw)] md:max-w-[99vw] transform bg-white shadow-2xl transition-transform",
           isDetailOpen ? "transform-none" : "translate-x-full",
         )}
       >

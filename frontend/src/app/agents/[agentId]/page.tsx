@@ -36,6 +36,7 @@ import type {
 import { Markdown } from "@/components/atoms/Markdown";
 import { StatusPill } from "@/components/atoms/StatusPill";
 import { DashboardSidebar } from "@/components/organisms/DashboardSidebar";
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav";
 import { DashboardShell } from "@/components/templates/DashboardShell";
 import { Button } from "@/components/ui/button";
 import {
@@ -198,13 +199,13 @@ export default function AgentDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="flex h-full flex-col gap-6 rounded-2xl surface-panel p-8">
+          <div className="flex h-full flex-col gap-6 rounded-2xl surface-panel p-4 pb-20 md:p-8 md:pb-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-quiet">
                   Agents
                 </p>
-                <h1 className="text-2xl font-semibold text-strong">
+                <h1 className="text-xl font-semibold text-strong truncate md:text-2xl">
                   {agent?.name ?? "Agent"}
                 </h1>
                 <p className="text-sm text-muted">
@@ -414,6 +415,7 @@ export default function AgentDetailPage() {
             )}
           </div>
         )}
+        <MobileBottomNav />
       </SignedIn>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

@@ -8,6 +8,7 @@ import { SignInButton, SignedIn, SignedOut } from "@/auth/clerk";
 
 import { BoardApprovalsPanel } from "@/components/BoardApprovalsPanel";
 import { DashboardSidebar } from "@/components/organisms/DashboardSidebar";
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav";
 import { DashboardShell } from "@/components/templates/DashboardShell";
 import { Button } from "@/components/ui/button";
 
@@ -32,8 +33,8 @@ export default function BoardApprovalsPage() {
       </SignedOut>
       <SignedIn>
         <DashboardSidebar />
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100">
-          <div className="p-6">
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100 pb-16 md:pb-0">
+          <div className="p-4 md:p-6">
             {boardId ? (
               <div className="h-[calc(100vh-160px)] min-h-[520px]">
                 <BoardApprovalsPanel boardId={boardId} scrollable />
@@ -41,6 +42,7 @@ export default function BoardApprovalsPage() {
             ) : null}
           </div>
         </main>
+        <MobileBottomNav />
       </SignedIn>
     </DashboardShell>
   );

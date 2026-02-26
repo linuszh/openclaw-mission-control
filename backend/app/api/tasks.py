@@ -260,6 +260,19 @@ async def _require_review_before_done_when_enabled(
         raise _review_required_for_done_error()
 
 
+async def _require_comment_for_review_when_enabled(
+    session: AsyncSession,
+    *,
+    board_id: UUID,
+) -> bool:
+    requires_comment = (
+        await session.exec(
+            select(col(Board.comment_required_for_review)).where(col(Board.id) == board_id),
+        )
+    ).first()
+    return bool(requires_comment)
+
+
 async def _require_no_pending_approval_for_status_change_when_enabled(
     session: AsyncSession,
     *,
@@ -577,6 +590,75 @@ async def _send_agent_task_message(
     )
 
 
+def _assignment_notification_message(*, board: Board, task: Task, agent: Agent) -> str:
+    description = _truncate_snippet(task.description or "")
+    details = [
+        f"Board: {board.name}",
+        f"Task: {task.title}",
+        f"Task ID: {task.id}",
+        f"Status: {task.status}",
+    ]
+    if description:
+        details.append(f"Description: {description}")
+    if task.status == "review" and agent.is_board_lead:
+        action = (
+            "Take action: review the deliverables now. "
+            "Approve by moving to done or return to inbox with clear feedback."
+        )
+        return "TASK READY FOR LEAD REVIEW\n" + "\n".join(details) + f"\n\n{action}"
+    return (
+        "TASK ASSIGNED\n"
+        + "\n".join(details)
+        + ("\n\nTake action: open the task and begin work. " "Post updates as task comments.")
+    )
+
+
+def _rework_notification_message(
+    *,
+    board: Board,
+    task: Task,
+    feedback: str | None,
+) -> str:
+    description = _truncate_snippet(task.description or "")
+    details = [
+        f"Board: {board.name}",
+        f"Task: {task.title}",
+        f"Task ID: {task.id}",
+        f"Status: {task.status}",
+    ]
+    if description:
+        details.append(f"Description: {description}")
+    requested_changes = (
+        _truncate_snippet(feedback)
+        if feedback and feedback.strip()
+        else "Lead requested changes. Review latest task comments for exact required updates."
+    )
+    return (
+        "CHANGES REQUESTED\n"
+        + "\n".join(details)
+        + "\n\nRequested changes:\n"
+        + requested_changes
+        + "\n\nTake action: address the requested changes, then move the task back to review."
+    )
+
+
+async def _latest_task_comment_by_agent(
+    session: AsyncSession,
+    *,
+    task_id: UUID,
+    agent_id: UUID,
+) -> str | None:
+    statement = (
+        select(col(ActivityEvent.message))
+        .where(col(ActivityEvent.task_id) == task_id)
+        .where(col(ActivityEvent.event_type) == "task.comment")
+        .where(col(ActivityEvent.agent_id) == agent_id)
+        .order_by(desc(col(ActivityEvent.created_at)))
+        .limit(1)
+    )
+    return (await session.exec(statement)).first()
+
+
 async def _notify_agent_on_task_assign(
     *,
     session: AsyncSession,
@@ -590,27 +672,7 @@ async def _notify_agent_on_task_assign(
     config = await dispatch.optional_gateway_config_for_board(board)
     if config is None:
         return
-    description = _truncate_snippet(task.description or "")
-    details = [
-        f"Board: {board.name}",
-        f"Task: {task.title}",
-        f"Task ID: {task.id}",
-        f"Status: {task.status}",
-    ]
-    if description:
-        details.append(f"Description: {description}")
-    project_context = (board.project_context or "").strip()
-    context_suffix = ""
-    if project_context:
-        context_suffix = f"\n\n---\nProject context:\n{project_context[:500]}"
-        if len(board.project_context or "") > 500:
-            context_suffix += "..."
-    message = (
-        "TASK ASSIGNED\n"
-        + "\n".join(details)
-        + "\n\nTake action: open the task and begin work. Post updates as task comments."
-        + context_suffix
-    )
+    message = _assignment_notification_message(board=board, task=task, agent=agent)
     error = await _send_agent_task_message(
         dispatch=dispatch,
         session_key=agent.openclaw_session_id,
@@ -632,6 +694,57 @@ async def _notify_agent_on_task_assign(
             session,
             event_type="task.assignee_notify_failed",
             message=f"Assignee notify failed: {error}",
+            agent_id=agent.id,
+            task_id=task.id,
+        )
+        await session.commit()
+
+
+async def _notify_agent_on_task_rework(
+    *,
+    session: AsyncSession,
+    board: Board,
+    task: Task,
+    agent: Agent,
+    lead: Agent,
+) -> None:
+    if not agent.openclaw_session_id:
+        return
+    dispatch = GatewayDispatchService(session)
+    config = await dispatch.optional_gateway_config_for_board(board)
+    if config is None:
+        return
+    feedback = await _latest_task_comment_by_agent(
+        session,
+        task_id=task.id,
+        agent_id=lead.id,
+    )
+    message = _rework_notification_message(
+        board=board,
+        task=task,
+        feedback=feedback,
+    )
+    error = await _send_agent_task_message(
+        dispatch=dispatch,
+        session_key=agent.openclaw_session_id,
+        config=config,
+        agent_name=agent.name,
+        message=message,
+    )
+    if error is None:
+        record_activity(
+            session,
+            event_type="task.rework_notified",
+            message=f"Assignee notified about requested changes: {agent.name}.",
+            agent_id=agent.id,
+            task_id=task.id,
+        )
+        await session.commit()
+    else:
+        record_activity(
+            session,
+            event_type="task.rework_notify_failed",
+            message=f"Rework notify failed: {error}",
             agent_id=agent.id,
             task_id=task.id,
         )
@@ -1956,7 +2069,42 @@ async def _lead_apply_assignment(
     update.task.assigned_agent_id = agent.id
 
 
-def _lead_apply_status(update: _TaskUpdateInput) -> None:
+async def _last_worker_who_moved_task_to_review(
+    session: AsyncSession,
+    *,
+    task_id: UUID,
+    board_id: UUID,
+    lead_agent_id: UUID,
+) -> UUID | None:
+    statement = (
+        select(col(ActivityEvent.agent_id))
+        .where(col(ActivityEvent.task_id) == task_id)
+        .where(col(ActivityEvent.event_type) == "task.status_changed")
+        .where(col(ActivityEvent.message).like("Task moved to review:%"))
+        .where(col(ActivityEvent.agent_id).is_not(None))
+        .order_by(desc(col(ActivityEvent.created_at)))
+    )
+    candidate_ids = list(await session.exec(statement))
+    for candidate_id in candidate_ids:
+        if candidate_id is None or candidate_id == lead_agent_id:
+            continue
+        candidate = await Agent.objects.by_id(candidate_id).first(session)
+        if candidate is None:
+            continue
+        if candidate.board_id != board_id or candidate.is_board_lead:
+            continue
+        return candidate.id
+    return None
+
+
+async def _lead_apply_status(
+    session: AsyncSession,
+    *,
+    update: _TaskUpdateInput,
+) -> None:
+    if update.actor.actor_type != "agent" or update.actor.agent is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    lead_agent = update.actor.agent
     if "status" not in update.updates:
         return
     if update.task.status != "review":
@@ -1977,7 +2125,12 @@ def _lead_apply_status(update: _TaskUpdateInput) -> None:
             ),
         )
     if target_status == "inbox":
-        update.task.assigned_agent_id = None
+        update.task.assigned_agent_id = await _last_worker_who_moved_task_to_review(
+            session,
+            task_id=update.task.id,
+            board_id=update.board_id,
+            lead_agent_id=lead_agent.id,
+        )
         update.task.in_progress_at = None
     update.task.status = target_status
 
@@ -2009,6 +2162,21 @@ async def _lead_notify_new_assignee(
         else None
     )
     if board:
+        if (
+            update.previous_status == "review"
+            and update.task.status == "inbox"
+            and update.actor.actor_type == "agent"
+            and update.actor.agent
+            and update.actor.agent.is_board_lead
+        ):
+            await _notify_agent_on_task_rework(
+                session=session,
+                board=board,
+                task=update.task,
+                agent=assigned_agent,
+                lead=update.actor.agent,
+            )
+            return
         await _notify_agent_on_task_assign(
             session=session,
             board=board,
@@ -2045,7 +2213,7 @@ async def _apply_lead_task_update(
             raise _blocked_task_error(blocked_by)
 
     await _lead_apply_assignment(session, update=update)
-    _lead_apply_status(update)
+    await _lead_apply_status(session, update=update)
     await _require_no_pending_approval_for_status_change_when_enabled(
         session,
         board_id=update.board_id,
@@ -2324,6 +2492,23 @@ async def _record_task_update_activity(
     await session.commit()
 
 
+async def _assign_review_task_to_lead(
+    session: AsyncSession,
+    *,
+    update: _TaskUpdateInput,
+) -> None:
+    if update.task.status != "review" or update.previous_status == "review":
+        return
+    lead = (
+        await Agent.objects.filter_by(board_id=update.board_id)
+        .filter(col(Agent.is_board_lead).is_(True))
+        .first(session)
+    )
+    if lead is None:
+        return
+    update.task.assigned_agent_id = lead.id
+
+
 async def _notify_task_update_assignment_changes(
     session: AsyncSession,
     *,
@@ -2351,12 +2536,6 @@ async def _notify_task_update_assignment_changes(
         or update.task.assigned_agent_id == update.previous_assigned
     ):
         return
-    if (
-        update.actor.actor_type == "agent"
-        and update.actor.agent
-        and update.task.assigned_agent_id == update.actor.agent.id
-    ):
-        return
     assigned_agent = await Agent.objects.by_id(update.task.assigned_agent_id).first(
         session,
     )
@@ -2367,6 +2546,28 @@ async def _notify_task_update_assignment_changes(
         if update.task.board_id
         else None
     )
+    if (
+        update.previous_status == "review"
+        and update.task.status == "inbox"
+        and update.actor.actor_type == "agent"
+        and update.actor.agent
+        and update.actor.agent.is_board_lead
+    ):
+        if board:
+            await _notify_agent_on_task_rework(
+                session=session,
+                board=board,
+                task=update.task,
+                agent=assigned_agent,
+                lead=update.actor.agent,
+            )
+        return
+    if (
+        update.actor.actor_type == "agent"
+        and update.actor.agent
+        and update.task.assigned_agent_id == update.actor.agent.id
+    ):
+        return
     if board:
         await _notify_agent_on_task_assign(
             session=session,
@@ -2407,9 +2608,12 @@ async def _finalize_updated_task(
     update.task.updated_at = utcnow()
 
     status_raw = update.updates.get("status")
-    # Entering review requires either a new comment or a valid recent one to
-    # ensure reviewers get context on readiness.
-    if status_raw == "review":
+    # Entering review can require a new comment or valid recent context when
+    # the board-level rule is enabled.
+    if status_raw == "review" and await _require_comment_for_review_when_enabled(
+        session,
+        board_id=update.board_id,
+    ):
         comment_text = (update.comment or "").strip()
         review_comment_author = update.task.assigned_agent_id or update.previous_assigned
         review_comment_since = (
@@ -2424,6 +2628,7 @@ async def _finalize_updated_task(
             review_comment_since,
         ):
             raise _comment_validation_error()
+    await _assign_review_task_to_lead(session, update=update)
 
     if update.tag_ids is not None:
         normalized = (

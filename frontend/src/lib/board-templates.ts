@@ -532,7 +532,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
       },
       {
         name: "Report Writer",
-        model: "openai/codex",
+        model: "openai-codex/gpt-5.3-codex",
         isLead: false,
         role: "researcher",
         identityProfile: {

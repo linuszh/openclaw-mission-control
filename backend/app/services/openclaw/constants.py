@@ -65,8 +65,6 @@ DEFAULT_GATEWAY_FILES = frozenset(
         "USER.md",
         "HEARTBEAT.md",
         "MEMORY.md",
-        "CLAUDE.md",
-        "GEMINI.md",
     },
 )
 

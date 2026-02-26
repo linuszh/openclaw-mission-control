@@ -774,10 +774,11 @@ function SetupAgentsBanner({
     if (!template || agentRoster.length === 0) return;
     setProvisionState({ status: "provisioning", current: 0, total: agentRoster.length });
 
-    // Append a short random suffix to each name to avoid gateway-level
-    // uniqueness collisions when multiple boards use the same template.
+    // Skip cliOnly agents — they are invoked via CLI by the lead, not provisioned.
+    const provisionable = agentRoster.filter((a) => !a.cliOnly);
+    // Append a short board-ID suffix to avoid gateway-level name collisions.
     const suffix = boardId.slice(0, 4);
-    const agents = agentRoster.map((agent) => ({
+    const agents = provisionable.map((agent) => ({
       name: `${agent.name} ${suffix}`,
       model: agent.model || null,
       is_board_lead: agent.isLead,
@@ -826,8 +827,14 @@ function SetupAgentsBanner({
               {bannerIcon} {bannerLabel} — provision your agent team.
             </p>
             <p className="mt-0.5 text-xs text-emerald-700">
-              {agentRoster.length} agents will be created:{" "}
-              {agentRoster.map((a) => a.name).join(", ")}.
+              {agentRoster.filter((a) => !a.cliOnly).length} agent(s) will be provisioned:{" "}
+              {agentRoster.filter((a) => !a.cliOnly).map((a) => a.name).join(", ")}.
+              {agentRoster.some((a) => a.cliOnly) ? (
+                <span className="text-emerald-600">
+                  {" "}CLI tools:{" "}
+                  {agentRoster.filter((a) => a.cliOnly).map((a) => a.name).join(", ")}.
+                </span>
+              ) : null}
             </p>
             {provisionState.status === "provisioning" ? (
               <p className="mt-1 text-xs text-emerald-600 animate-pulse">

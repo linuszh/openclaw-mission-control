@@ -6,6 +6,9 @@ export type AgentTemplate = {
   soulTemplate?: string;
   identityProfile?: Record<string, string>;
   heartbeatConfig?: Record<string, unknown> | null;
+  /** CLI-only agents are listed in the UI but NOT provisioned in OpenClaw.
+   *  The lead agent invokes them via shell commands (claude, gemini, codex). */
+  cliOnly?: boolean;
 };
 
 export type BoardTemplate = {
@@ -507,6 +510,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "google-antigravity/gemini-3.1-pro-preview",
         isLead: false,
         role: "researcher",
+        cliOnly: true,
         identityProfile: {
           role: "Web Research Specialist",
           purpose:
@@ -521,6 +525,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "anthropic/claude-opus-4-6",
         isLead: false,
         role: "researcher",
+        cliOnly: true,
         identityProfile: {
           role: "Deep Analyst",
           purpose:
@@ -535,6 +540,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         model: "openai-codex/gpt-5.3-codex",
         isLead: false,
         role: "researcher",
+        cliOnly: true,
         identityProfile: {
           role: "Report Writer",
           purpose:

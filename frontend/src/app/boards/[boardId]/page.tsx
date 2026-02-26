@@ -774,8 +774,11 @@ function SetupAgentsBanner({
     if (!template || agentRoster.length === 0) return;
     setProvisionState({ status: "provisioning", current: 0, total: agentRoster.length });
 
+    // Append a short random suffix to each name to avoid gateway-level
+    // uniqueness collisions when multiple boards use the same template.
+    const suffix = boardId.slice(0, 4);
     const agents = agentRoster.map((agent) => ({
-      name: agent.name,
+      name: `${agent.name} ${suffix}`,
       model: agent.model || null,
       is_board_lead: agent.isLead,
       soul_template: agent.soulTemplate ?? null,
